@@ -26,7 +26,7 @@ import pytz
 from dogpile.cache.api import NO_VALUE
 from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
-from sqlalchemy.orm import defer, subqueryload, lazyload, lazyload_all
+from sqlalchemy.orm import defer, subqueryload, lazyload
 
 from app import settings
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
@@ -496,60 +496,59 @@ class BalanceTransferListResource(JSONAPIListResource):
     def serialize_item(self, item):
 
         if item.event_id == 'Transfer':
-
-            sender = Account.query(self.session).get(item.attributes[0]['value'].replace('0x', ''))
+            sender = Account.query(self.session).get(item.attributes[0].replace('0x', ''))
 
             if sender:
                 sender_data = sender.serialize()
             else:
                 sender_data = {
                     'type': 'account',
-                    'id': item.attributes[0]['value'].replace('0x', ''),
+                    'id': item.attributes[0].replace('0x', ''),
                     'attributes': {
-                        'id': item.attributes[0]['value'].replace('0x', ''),
-                        'address': ss58_encode(item.attributes[0]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                        'id': item.attributes[0].replace('0x', ''),
+                        'address': ss58_encode(item.attributes[0].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
                     }
                 }
 
-            destination = Account.query(self.session).get(item.attributes[1]['value'].replace('0x', ''))
+            destination = Account.query(self.session).get(item.attributes[1].replace('0x', ''))
 
             if destination:
                 destination_data = destination.serialize()
             else:
                 destination_data = {
                     'type': 'account',
-                    'id': item.attributes[1]['value'].replace('0x', ''),
+                    'id': item.attributes[1].replace('0x', ''),
                     'attributes': {
-                        'id': item.attributes[1]['value'].replace('0x', ''),
-                        'address': ss58_encode(item.attributes[1]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                        'id': item.attributes[1].replace('0x', ''),
+                        'address': ss58_encode(item.attributes[1].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
                     }
                 }
             # Some networks don't have fees
             if len(item.attributes) == 4:
-                fee = item.attributes[3]['value']
+                fee = item.attributes[3]
             else:
                 fee = 0
 
-            value = item.attributes[2]['value']
+            value = item.attributes[2]
         elif item.event_id == 'Claimed':
 
             fee = 0
-            sender_data = {'name': 'Claim', 'eth_address': item.attributes[1]['value']}
+            sender_data = {'name': 'Claim', 'eth_address': item.attributes[1]}
             destination_data = {}
-            value = item.attributes[2]['value']
+            value = item.attributes[2]
 
         elif item.event_id == 'Deposit':
 
             fee = 0
             sender_data = {'name': 'Deposit'}
             destination_data = {}
-            value = item.attributes[1]['value']
+            value = item.attributes[1]
 
         elif item.event_id == 'Reward':
             fee = 0
             sender_data = {'name': 'Staking reward'}
             destination_data = {}
-            value = item.attributes[1]['value']
+            value = item.attributes[1]
         else:
             sender_data = {}
             fee = 0
@@ -577,38 +576,37 @@ class BalanceTransferDetailResource(JSONAPIDetailResource):
         return Event.query(self.session).get(item_id.split('-'))
 
     def serialize_item(self, item):
-
-        sender = Account.query(self.session).get(item.attributes[0]['value'].replace('0x', ''))
+        sender = Account.query(self.session).get(item.attributes[0].replace('0x', ''))
 
         if sender:
             sender_data = sender.serialize()
         else:
             sender_data = {
                 'type': 'account',
-                'id': item.attributes[0]['value'].replace('0x', ''),
+                'id': item.attributes[0].replace('0x', ''),
                 'attributes': {
-                    'id': item.attributes[0]['value'].replace('0x', ''),
-                    'address': ss58_encode(item.attributes[0]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                    'id': item.attributes[0].replace('0x', ''),
+                    'address': ss58_encode(item.attributes[0].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
                 }
             }
 
-        destination = Account.query(self.session).get(item.attributes[1]['value'].replace('0x', ''))
+        destination = Account.query(self.session).get(item.attributes[1].replace('0x', ''))
 
         if destination:
             destination_data = destination.serialize()
         else:
             destination_data = {
                 'type': 'account',
-                'id': item.attributes[1]['value'].replace('0x', ''),
+                'id': item.attributes[1].replace('0x', ''),
                 'attributes': {
-                    'id': item.attributes[1]['value'].replace('0x', ''),
-                    'address': ss58_encode(item.attributes[1]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                    'id': item.attributes[1].replace('0x', ''),
+                    'address': ss58_encode(item.attributes[1].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
                 }
             }
 
         # Some networks don't have fees
         if len(item.attributes) == 4:
-            fee = item.attributes[3]['value']
+            fee = item.attributes[3]
         else:
             fee = 0
 
@@ -620,7 +618,7 @@ class BalanceTransferDetailResource(JSONAPIDetailResource):
                 'event_idx': '{}-{}'.format(item.block_id, item.event_idx),
                 'sender': sender_data,
                 'destination': destination_data,
-                'value': item.attributes[2]['value'],
+                'value': item.attributes[2],
                 'fee': fee
             }
         }
@@ -720,7 +718,7 @@ class AccountDetailResource(JSONAPIDetailResource):
 
         # Get balance history
         account_info_snapshot = AccountInfoSnapshot.query(self.session).filter_by(
-                account_id=item.id
+            account_id=item.id
         ).order_by(AccountInfoSnapshot.block_id.desc())[:1000]
 
         data['attributes']['balance_history'] = [

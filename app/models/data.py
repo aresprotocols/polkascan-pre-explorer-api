@@ -257,49 +257,49 @@ class Event(BaseModel):
         return '{}-{}'.format(self.block_id, self.event_idx)
 
     def serialize_formatting_hook(self, obj_dict):
-
-        for item in obj_dict['attributes']['attributes']:
-            if item['type'] in ['AccountId', 'AuthorityId', 'Address', 'LookupSource'] and item['value']:
-                # SS58 format AccountId public keys
-                item['orig_value'] = item['value'].replace('0x', '')
-                item['value'] = ss58_encode(item['value'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
-
-            elif item['type'] in ['AccountIndex'] and item['value']:
-                # SS58 format Account index
-                item['orig_value'] = item['value']
-                item['value'] = ss58_encode_account_index(item['value'], SUBSTRATE_ADDRESS_TYPE)
-            elif item['type'] in ['AuthorityList'] and item['value']:
-                for idx, vec_item in enumerate(item['value']):
-                    item['value'][idx]['AuthorityId'] = {
-                        'name': 'AuthorityId',
-                        'type': 'Address',
-                        'value': ss58_encode(vec_item['AuthorityId'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                        'orig_value': vec_item['AuthorityId'].replace('0x', '')
-                    }
-            elif item['type'] == 'Vec<IdentificationTuple>':
-                for idx, vec_item in enumerate(item['value']):
-                    item['value'][idx]['validatorId'] = {
-                        'name': 'validatorId',
-                        'type': 'Address',
-                        'value': ss58_encode(vec_item['validatorId'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                        'orig_value': vec_item['validatorId'].replace('0x', '')
-                    }
-
-                    for other_idx, other_item in enumerate(vec_item['exposure']['others']):
-                        item['value'][idx]['exposure']['others'][other_idx]['who'] = {
-                            'name': 'validatorId',
-                            'type': 'Address',
-                            'value': ss58_encode(other_item['who'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                            'orig_value': other_item['who'].replace('0x', '')
-                        }
-            elif item['type'] in ['Vec<(AccountId, Balance)>'] and item['value']:
-                for idx, vec_item in enumerate(item['value']):
-                    item['value'][idx]['account'] = {
-                        'name': 'account',
-                        'type': 'Address',
-                        'value': ss58_encode(vec_item['account'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                        'orig_value': vec_item['account'].replace('0x', '')
-                    }
+        # for key in obj_dict['attributes']['attributes']:
+        #     value = obj_dict['attributes']['attributes'][key]
+        #     if key in ['AccountId', 'AuthorityId', 'Address', 'LookupSource'] and value:
+        #         # SS58 format AccountId public keys
+        #         item['orig_value'] = item['value'].replace('0x', '')
+        #         item['value'] = ss58_encode(item['value'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
+        #
+        #     elif item['type'] in ['AccountIndex'] and item['value']:
+        #         # SS58 format Account index
+        #         item['orig_value'] = item['value']
+        #         item['value'] = ss58_encode_account_index(item['value'], SUBSTRATE_ADDRESS_TYPE)
+        #     elif item['type'] in ['AuthorityList'] and item['value']:
+        #         for idx, vec_item in enumerate(item['value']):
+        #             item['value'][idx]['AuthorityId'] = {
+        #                 'name': 'AuthorityId',
+        #                 'type': 'Address',
+        #                 'value': ss58_encode(vec_item['AuthorityId'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+        #                 'orig_value': vec_item['AuthorityId'].replace('0x', '')
+        #             }
+        #     elif item['type'] == 'Vec<10341779>':
+        #         for idx, vec_item in enumerate(item['value']):
+        #             item['value'][idx]['validatorId'] = {
+        #                 'name': 'validatorId',
+        #                 'type': 'Address',
+        #                 'value': ss58_encode(vec_item['validatorId'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+        #                 'orig_value': vec_item['validatorId'].replace('0x', '')
+        #             }
+        #
+        #             for other_idx, other_item in enumerate(vec_item['exposure']['others']):
+        #                 item['value'][idx]['exposure']['others'][other_idx]['who'] = {
+        #                     'name': 'validatorId',
+        #                     'type': 'Address',
+        #                     'value': ss58_encode(other_item['who'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+        #                     'orig_value': other_item['who'].replace('0x', '')
+        #                 }
+        #     elif item['type'] in ['Vec<(AccountId, Balance)>'] and item['value']:
+        #         for idx, vec_item in enumerate(item['value']):
+        #             item['value'][idx]['account'] = {
+        #                 'name': 'account',
+        #                 'type': 'Address',
+        #                 'value': ss58_encode(vec_item['account'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+        #                 'orig_value': vec_item['account'].replace('0x', '')
+        #             }
         return obj_dict
 
 
@@ -347,7 +347,6 @@ class Extrinsic(BaseModel):
         return '{}-{}'.format(self.block_id, self.extrinsic_idx)
 
     def serialize_formatting_hook(self, obj_dict):
-
         if self.account:
             obj_dict['attributes']['account'] = self.account.serialize()
 
@@ -398,23 +397,23 @@ class Log(BaseModel):
 
 
 data_session = sa.Table('data_session', BaseModel.metadata,
-    sa.Column('id', sa.Integer(), primary_key=True, autoincrement=False),
-    sa.Column('start_at_block', sa.Integer()),
-    sa.Column('era', sa.Integer()),
-    sa.Column('era_idx', sa.Integer()),
-    sa.Column('created_at_block', sa.Integer(), nullable=False),
-    sa.Column('created_at_extrinsic', sa.Integer()),
-    sa.Column('created_at_event', sa.Integer()),
-    sa.Column('count_validators', sa.Integer()),
-    sa.Column('count_nominators', sa.Integer())
-)
+                        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=False),
+                        sa.Column('start_at_block', sa.Integer()),
+                        sa.Column('era', sa.Integer()),
+                        sa.Column('era_idx', sa.Integer()),
+                        sa.Column('created_at_block', sa.Integer(), nullable=False),
+                        sa.Column('created_at_extrinsic', sa.Integer()),
+                        sa.Column('created_at_event', sa.Integer()),
+                        sa.Column('count_validators', sa.Integer()),
+                        sa.Column('count_nominators', sa.Integer())
+                        )
 
 
 data_session_total = sa.Table('data_session_total', BaseModel.metadata,
-    sa.Column('id', sa.Integer(), sa.ForeignKey('data_session.id'), primary_key=True, autoincrement=False),
-    sa.Column('end_at_block', sa.Integer()),
-    sa.Column('count_blocks', sa.Integer())
-)
+                              sa.Column('id', sa.Integer(), sa.ForeignKey('data_session.id'), primary_key=True, autoincrement=False),
+                              sa.Column('end_at_block', sa.Integer()),
+                              sa.Column('count_blocks', sa.Integer())
+                              )
 
 
 class Session(BaseModel):
@@ -446,7 +445,7 @@ class SessionValidator(BaseModel):
     validator_stash_account = relationship(Account, foreign_keys=[validator_stash], primaryjoin=validator_stash == Account.id, lazy='subquery')
     validator_controller = sa.Column(sa.String(64), index=True)
     validator_controller_account = relationship(Account, foreign_keys=[validator_controller],
-                                           primaryjoin=validator_controller == Account.id)
+                                                primaryjoin=validator_controller == Account.id)
     validator_session = sa.Column(sa.String(64), index=True)
     bonded_total = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     bonded_active = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
