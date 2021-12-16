@@ -26,7 +26,7 @@ import pytz
 from dogpile.cache.api import NO_VALUE
 from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
-from sqlalchemy.orm import defer, subqueryload, lazyload, lazyload_all
+from sqlalchemy.orm import defer, subqueryload, lazyload
 
 from app import settings
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
