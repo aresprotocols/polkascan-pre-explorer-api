@@ -24,7 +24,7 @@ from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.dialects.mysql import LONGTEXT
 
 from app.models.base import BaseModel
-from app.utils.ss58 import ss58_encode, ss58_encode_account_index
+from app.utils.ss58 import ss58_encode, ss58_encode_account_index, ss58_decode
 from app.settings import LOG_TYPE_AUTHORITIESCHANGE, SUBSTRATE_ADDRESS_TYPE
 
 
@@ -270,11 +270,11 @@ class Event(BaseModel):
                 item['value'] = ss58_encode_account_index(item['value'], SUBSTRATE_ADDRESS_TYPE)
             elif item['type'] in ['AuthorityList'] and item['value']:
                 for idx, vec_item in enumerate(item['value']):
-                    item['value'][idx]['AuthorityId'] = {
+                    item['value'][idx]['authority_id'] = {
                         'name': 'AuthorityId',
                         'type': 'Address',
-                        'value': ss58_encode(vec_item['AuthorityId'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                        'orig_value': vec_item['AuthorityId'].replace('0x', '')
+                        'value': ss58_encode(vec_item['authority_id'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+                        'orig_value': vec_item['authority_id'].replace('0x', '')
                     }
             elif item['type'] == 'Vec<IdentificationTuple>':
                 for idx, vec_item in enumerate(item['value']):
@@ -357,7 +357,7 @@ class Extrinsic(BaseModel):
 
         for item in obj_dict['attributes'].get('params', []):
             # SS58 format Addresses public keys
-            if item['type'] in ['Address', 'AccountId'] and item['value']:
+            if item['type'] in ['Address', 'AccountId', 'LookupSource'] and item['value']:
                 self.format_address(item)
             elif item['type'] in ['Vec<Address>', 'Vec<AccountId>', 'Vec<<Lookup as StaticLookup>::Source>'] and item['value']:
                 for idx, vec_item in enumerate(item['value']):

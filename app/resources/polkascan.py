@@ -26,7 +26,7 @@ import pytz
 from dogpile.cache.api import NO_VALUE
 from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
-from sqlalchemy.orm import defer, subqueryload, lazyload
+from sqlalchemy.orm import defer, subqueryload, lazyload, noload
 
 from app import settings
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
@@ -138,9 +138,13 @@ class ExtrinsicListResource(JSONAPIListResource):
     exclude_params = True
 
     def get_query(self):
+        # print("aa: {}".format(defer('params')))
         return Extrinsic.query(self.session).options(defer('params')).order_by(
             Extrinsic.block_id.desc()
         )
+        # return Extrinsic.query(self.session).options(noload()).order_by(
+        #     Extrinsic.block_id.desc()
+        # )
 
     def serialize_item(self, item):
         # Exclude large params from list view
@@ -497,8 +501,9 @@ class BalanceTransferListResource(JSONAPIListResource):
 
         if item.event_id == 'Transfer':
 
-            sender = Account.query(self.session).get(item.attributes[0]['value'].replace('0x', ''))
-
+            # TODO optimize ??
+            # sender = Account.query(self.session).get(item.attributes[0]['value'].replace('0x', ''))
+            sender = None
             if sender:
                 sender_data = sender.serialize()
             else:
@@ -507,12 +512,13 @@ class BalanceTransferListResource(JSONAPIListResource):
                     'id': item.attributes[0]['value'].replace('0x', ''),
                     'attributes': {
                         'id': item.attributes[0]['value'].replace('0x', ''),
-                        'address': ss58_encode(item.attributes[0]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                        'address': ss58_encode(item.attributes[0]['value'].replace('0x', ''),
+                                               settings.SUBSTRATE_ADDRESS_TYPE)
                     }
                 }
 
-            destination = Account.query(self.session).get(item.attributes[1]['value'].replace('0x', ''))
-
+            # destination = Account.query(self.session).get(item.attributes[1]['value'].replace('0x', ''))
+            destination = None
             if destination:
                 destination_data = destination.serialize()
             else:
