@@ -43,53 +43,83 @@ class ChainDataResource(JSONAPIDetailResource):
     def get_item(self, item_id):
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
+
         substrate = SubstrateInterface(
             url=settings.SUBSTRATE_RPC_URL,
             type_registry_preset=settings.TYPE_REGISTRY
         )
         substrate.runtime_config.update_type_registry_types({"EraIndex": "u32", "BalanceOf": "Balance"})
-        block: Block = Block.query(self.session).filter_by(id=block_total.id).one()
-        finalized_block = substrate.get_block_number(substrate.get_chain_finalised_head())
 
+        block_hash = substrate.get_chain_finalised_head()
+        finalized_block = substrate.get_block_number(block_hash)
         total_issuance = utils.query_storage(pallet_name="Balances", storage_name="TotalIssuance", substrate=substrate,
-                                             block_hash=block.hash)
+                                             block_hash=block_hash)
         if total_issuance is None:
             total_issuance = 0
         else:
-            total_issuance = str(total_issuance.value)
+            total_issuance = total_issuance.value
 
         total_validators = utils.query_storage(pallet_name='Staking', storage_name='CounterForValidators',
                                                substrate=substrate,
-                                               block_hash=block.hash)
+                                               block_hash=block_hash)
         if total_validators is None:
             total_validators = 0
         else:
             total_validators = float(total_validators.value)
 
-        curent_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
-                                         substrate=substrate,
-                                         block_hash=block.hash)
+        current_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
+                                          substrate=substrate,
+                                          block_hash=block_hash)
         total_stake = None
         if total_validators is not None:
             total_stake = utils.query_storage(pallet_name='Staking', storage_name='ErasTotalStake',
-                                              substrate=substrate, block_hash=block.hash, params=[curent_era.value])
+                                              substrate=substrate, block_hash=block_hash, params=[current_era.value])
 
         if total_stake is not None:
-            total_stake = str(total_stake.value)
+            total_stake = total_stake.value
         else:
-            total_stake = '0'
+            total_stake = 0
+
+        # calculate inflation
+        # TODO read num_auctions from onchain data // const numAuctions = api.query.auctions ? auctionCounter : BN_ZERO
+        num_auctions = 0
+
+        # inflation_params
+        auction_adjust = 0
+        auction_max = 0
+        falloff = 0.05
+        max_inflation = 0.1
+        min_inflation = 0.025
+        stake_target = 0.5
+
+        staked_fraction = 0 if total_issuance == 0 or total_issuance == 0 else total_stake / total_issuance
+        # staked_Fraction = total_issuance == 0 || totalIssuance.isZero()? 0 : totalStaked.mul(BN_MILLION).div(totalIssuance).toNumber() / BN_MILLION.toNumber();
+        ideal_stake = stake_target - (min(auction_max, num_auctions) * auction_adjust)
+        ideal_interest = max_inflation / ideal_stake
+        if staked_fraction <= ideal_stake:
+            tmp = staked_fraction * (ideal_interest - (min_inflation / ideal_stake))
+        else:
+            tmp = (ideal_interest * ideal_stake - min_inflation) * (2 ** ((ideal_stake - staked_fraction) / falloff))
+        inflation = 100 * (min_inflation + tmp)
+
+        # print("staked_fraction:{}".format(staked_fraction))
+        # print("ideal_stake:{}".format(ideal_stake))
+        # print("ideal_interest:{}".format(ideal_interest))
+        # print("inflation:{}".format(inflation))
+        # print("test:{}".format(2 ** ((ideal_stake - staked_fraction) / falloff)))
 
         # validator_keys = substrate.rpc_request('state_getKeys', [storage_key_prefix, block.hash]).get('result')
         # validators = [storage_key[-64:] for storage_key in rpc_result if len(storage_key) == 146]
         # total_validators = len(validator_keys)
         resp = {
-            'total_extrinsics_signed': float(block_total.total_extrinsics_signed),
-            'total_events_transfer': float(block_total.total_events_transfer),
-            'total_account': float(block_total.total_accounts),
-            'total_issuance': total_issuance,
+            'total_extrinsics_signed': int(block_total.total_extrinsics_signed),
+            'total_events_transfer': int(block_total.total_events_transfer),
+            'total_account': int(block_total.total_accounts),
+            'total_issuance': str(total_issuance),
             'finalized_block': finalized_block,
-            'total_validators': total_validators,
-            'total_stake': total_stake,
+            'total_validators': int(total_validators),
+            'total_stake': str(total_stake),
+            'inflation': inflation
         }
         return resp
 
@@ -470,7 +500,8 @@ class NetworkStatisticsResource(JSONAPIResource):
 
         if response is NO_VALUE:
 
-            best_block = BlockTotal.query(self.session).filter_by(id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
+            best_block = BlockTotal.query(self.session).filter_by(
+                id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
             if best_block:
                 response = self.get_jsonapi_response(
                     data={
