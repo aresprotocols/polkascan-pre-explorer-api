@@ -45,7 +45,10 @@ class JSONAPIResource(BaseResource):
         return {}
 
     def serialize_item(self, item):
-        return item.serialize()
+        if hasattr(item, 'serialize'):
+            return item.serialize()
+        else:
+            return item
 
     def process_get_response(self, req, resp, **kwargs):
         return {

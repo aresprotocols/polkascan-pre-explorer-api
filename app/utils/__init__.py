@@ -18,3 +18,4 @@
 #
 #  __init__.py
 
+from .storage import query_storage

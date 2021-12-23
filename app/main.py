@@ -33,6 +33,10 @@ from app.middleware.cache import CacheMiddleware
 
 from app.resources import polkascan
 
+import logging
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
 
 # Database connection
 engine = create_engine(DB_CONNECTION, echo=DEBUG, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
@@ -58,6 +62,7 @@ app = falcon.API(middleware=[
 ])
 
 # Application routes
+app.add_route('/chain', polkascan.ChainDataResource())
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())

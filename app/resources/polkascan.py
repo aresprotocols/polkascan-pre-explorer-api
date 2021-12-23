@@ -28,7 +28,7 @@ from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
 from sqlalchemy.orm import defer, subqueryload, lazyload, noload
 
-from app import settings
+from app import settings, utils
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
     RuntimeCallParam, RuntimeEventAttribute, RuntimeType, RuntimeStorage, Account, Session, Contract, \
     BlockTotal, SessionValidator, Log, AccountIndex, RuntimeConstant, SessionNominator, \
@@ -37,6 +37,61 @@ from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDeta
 from app.utils.ss58 import ss58_decode, ss58_encode
 from scalecodec.base import RuntimeConfiguration
 from substrateinterface import SubstrateInterface
+
+
+class ChainDataResource(JSONAPIDetailResource):
+    def get_item(self, item_id):
+        block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
+            id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
+        substrate = SubstrateInterface(
+            url=settings.SUBSTRATE_RPC_URL,
+            type_registry_preset=settings.TYPE_REGISTRY
+        )
+        substrate.runtime_config.update_type_registry_types({"EraIndex": "u32", "BalanceOf": "Balance"})
+        block: Block = Block.query(self.session).filter_by(id=block_total.id).one()
+        finalized_block = substrate.get_block_number(substrate.get_chain_finalised_head())
+
+        total_issuance = utils.query_storage(pallet_name="Balances", storage_name="TotalIssuance", substrate=substrate,
+                                             block_hash=block.hash)
+        if total_issuance is None:
+            total_issuance = 0
+        else:
+            total_issuance = str(total_issuance.value)
+
+        total_validators = utils.query_storage(pallet_name='Staking', storage_name='CounterForValidators',
+                                               substrate=substrate,
+                                               block_hash=block.hash)
+        if total_validators is None:
+            total_validators = 0
+        else:
+            total_validators = float(total_validators.value)
+
+        curent_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
+                                         substrate=substrate,
+                                         block_hash=block.hash)
+        total_stake = None
+        if total_validators is not None:
+            total_stake = utils.query_storage(pallet_name='Staking', storage_name='ErasTotalStake',
+                                              substrate=substrate, block_hash=block.hash, params=[curent_era.value])
+
+        if total_stake is not None:
+            total_stake = str(total_stake.value)
+        else:
+            total_stake = '0'
+
+        # validator_keys = substrate.rpc_request('state_getKeys', [storage_key_prefix, block.hash]).get('result')
+        # validators = [storage_key[-64:] for storage_key in rpc_result if len(storage_key) == 146]
+        # total_validators = len(validator_keys)
+        resp = {
+            'total_extrinsics_signed': float(block_total.total_extrinsics_signed),
+            'total_events_transfer': float(block_total.total_events_transfer),
+            'total_account': float(block_total.total_accounts),
+            'total_issuance': total_issuance,
+            'finalized_block': finalized_block,
+            'total_validators': total_validators,
+            'total_stake': total_stake,
+        }
+        return resp
 
 
 class BlockDetailsResource(JSONAPIDetailResource):
@@ -57,11 +112,11 @@ class BlockDetailsResource(JSONAPIDetailResource):
             relationships['extrinsics'] = Extrinsic.query(self.session).filter_by(block_id=item.id).order_by(
                 'extrinsic_idx')
         if 'transactions' in include_list:
-            relationships['transactions'] = Extrinsic.query(self.session).options(defer('params')).filter_by(block_id=item.id, signed=1).order_by(
-                'extrinsic_idx')
+            relationships['transactions'] = Extrinsic.query(self.session).options(defer('params')).filter_by(
+                block_id=item.id, signed=1).order_by('extrinsic_idx')
         if 'inherents' in include_list:
-            relationships['inherents'] = Extrinsic.query(self.session).options(defer('params')).filter_by(block_id=item.id, signed=0).order_by(
-                'extrinsic_idx')
+            relationships['inherents'] = Extrinsic.query(self.session).options(defer('params')).filter_by(
+                block_id=item.id, signed=0).order_by('extrinsic_idx')
         if 'events' in include_list:
             relationships['events'] = Event.query(self.session).filter_by(block_id=item.id).order_by(
                 'event_idx')
@@ -134,7 +189,6 @@ class BlockTotalListResource(JSONAPIListResource):
 
 
 class ExtrinsicListResource(JSONAPIListResource):
-
     exclude_params = True
 
     def get_query(self):
@@ -198,19 +252,15 @@ class ExtrinsicListResource(JSONAPIListResource):
             self.exclude_params = True
 
             if params.get('filter[signed]'):
-
                 query = query.filter_by(signed=params.get('filter[signed]'))
 
             if params.get('filter[module_id]'):
-
                 query = query.filter_by(module_id=params.get('filter[module_id]'))
 
             if params.get('filter[call_id]'):
-
                 query = query.filter_by(call_id=params.get('filter[call_id]'))
 
             if params.get('filter[address]'):
-
                 query = query.filter_by(address=account_id)
 
         return query
@@ -407,7 +457,6 @@ class LogDetailResource(JSONAPIDetailResource):
 
 
 class NetworkStatisticsResource(JSONAPIResource):
-
     cache_expiration_time = 6
 
     def on_get(self, req, resp, network_id=None):
@@ -494,7 +543,6 @@ class BalanceTransferListResource(JSONAPIListResource):
                 [[s.block_id, s.event_idx] for s in search_index]
             )).order_by(Event.block_id.desc())
 
-
         return query
 
     def serialize_item(self, item):
@@ -527,7 +575,8 @@ class BalanceTransferListResource(JSONAPIListResource):
                     'id': item.attributes[1]['value'].replace('0x', ''),
                     'attributes': {
                         'id': item.attributes[1]['value'].replace('0x', ''),
-                        'address': ss58_encode(item.attributes[1]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                        'address': ss58_encode(item.attributes[1]['value'].replace('0x', ''),
+                                               settings.SUBSTRATE_ADDRESS_TYPE)
                     }
                 }
             # Some networks don't have fees
@@ -594,7 +643,8 @@ class BalanceTransferDetailResource(JSONAPIDetailResource):
                 'id': item.attributes[0]['value'].replace('0x', ''),
                 'attributes': {
                     'id': item.attributes[0]['value'].replace('0x', ''),
-                    'address': ss58_encode(item.attributes[0]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                    'address': ss58_encode(item.attributes[0]['value'].replace('0x', ''),
+                                           settings.SUBSTRATE_ADDRESS_TYPE)
                 }
             }
 
@@ -608,7 +658,8 @@ class BalanceTransferDetailResource(JSONAPIDetailResource):
                 'id': item.attributes[1]['value'].replace('0x', ''),
                 'attributes': {
                     'id': item.attributes[1]['value'].replace('0x', ''),
-                    'address': ss58_encode(item.attributes[1]['value'].replace('0x', ''), settings.SUBSTRATE_ADDRESS_TYPE)
+                    'address': ss58_encode(item.attributes[1]['value'].replace('0x', ''),
+                                           settings.SUBSTRATE_ADDRESS_TYPE)
                 }
             }
 
@@ -696,7 +747,6 @@ class AccountResource(JSONAPIListResource):
 
 
 class AccountDetailResource(JSONAPIDetailResource):
-
     cache_expiration_time = 12
 
     def __init__(self):
@@ -706,7 +756,8 @@ class AccountDetailResource(JSONAPIDetailResource):
         super(AccountDetailResource, self).__init__()
 
     def get_item(self, item_id):
-        return Account.query(self.session).filter(or_(Account.address == item_id, Account.index_address == item_id)).first()
+        return Account.query(self.session).filter(
+            or_(Account.address == item_id, Account.index_address == item_id)).first()
 
     def get_relationships(self, include_list, item):
         relationships = {}
@@ -726,7 +777,7 @@ class AccountDetailResource(JSONAPIDetailResource):
 
         # Get balance history
         account_info_snapshot = AccountInfoSnapshot.query(self.session).filter_by(
-                account_id=item.id
+            account_id=item.id
         ).order_by(AccountInfoSnapshot.block_id.desc())[:1000]
 
         data['attributes']['balance_history'] = [
@@ -734,7 +785,7 @@ class AccountDetailResource(JSONAPIDetailResource):
                 'name': "Total balance",
                 'type': 'line',
                 'data': [
-                    [item.block_id, float((item.balance_total or 0) / 10**settings.SUBSTRATE_TOKEN_DECIMALS)]
+                    [item.block_id, float((item.balance_total or 0) / 10 ** settings.SUBSTRATE_TOKEN_DECIMALS)]
                     for item in reversed(account_info_snapshot)
                 ],
             }
@@ -835,7 +886,6 @@ class AccountDetailResource(JSONAPIDetailResource):
                 ).order_by(RuntimeStorage.spec_version.desc()).first()
 
                 if storage_call:
-
                     data['attributes']['nonce'] = substrate.get_storage(
                         block_hash=None,
                         module='System',
@@ -881,7 +931,6 @@ class AccountIndexDetailResource(JSONAPIDetailResource):
 
 
 class SessionListResource(JSONAPIListResource):
-
     cache_expiration_time = 60
 
     def get_query(self):
@@ -912,7 +961,6 @@ class SessionDetailResource(JSONAPIDetailResource):
 
 
 class SessionValidatorListResource(JSONAPIListResource):
-
     cache_expiration_time = 60
 
     def get_query(self):
@@ -921,9 +969,7 @@ class SessionValidatorListResource(JSONAPIListResource):
         )
 
     def apply_filters(self, query, params):
-
         if params.get('filter[latestSession]'):
-
             session = Session.query(self.session).order_by(Session.id.desc()).first()
 
             query = query.filter_by(session_id=session.id)
@@ -967,7 +1013,6 @@ class SessionValidatorDetailResource(JSONAPIDetailResource):
 
 
 class SessionNominatorListResource(JSONAPIListResource):
-
     cache_expiration_time = 60
 
     def get_query(self):
@@ -976,9 +1021,7 @@ class SessionNominatorListResource(JSONAPIListResource):
         )
 
     def apply_filters(self, query, params):
-
         if params.get('filter[latestSession]'):
-
             session = Session.query(self.session).order_by(Session.id.desc()).first()
 
             query = query.filter_by(session_id=session.id)
@@ -1001,7 +1044,6 @@ class ContractDetailResource(JSONAPIDetailResource):
 
 
 class RuntimeListResource(JSONAPIListResource):
-
     cache_expiration_time = 60
 
     def get_query(self):
@@ -1032,19 +1074,16 @@ class RuntimeDetailResource(JSONAPIDetailResource):
 
 
 class RuntimeCallListResource(JSONAPIListResource):
-
     cache_expiration_time = 3600
 
     def apply_filters(self, query, params):
 
         if params.get('filter[latestRuntime]'):
-
             latest_runtime = Runtime.query(self.session).order_by(Runtime.spec_version.desc()).first()
 
             query = query.filter_by(spec_version=latest_runtime.spec_version)
 
         if params.get('filter[module_id]'):
-
             query = query.filter_by(module_id=params.get('filter[module_id]'))
 
         return query
@@ -1087,19 +1126,16 @@ class RuntimeCallDetailResource(JSONAPIDetailResource):
 
 
 class RuntimeEventListResource(JSONAPIListResource):
-
     cache_expiration_time = 3600
 
     def apply_filters(self, query, params):
 
         if params.get('filter[latestRuntime]'):
-
             latest_runtime = Runtime.query(self.session).order_by(Runtime.spec_version.desc()).first()
 
             query = query.filter_by(spec_version=latest_runtime.spec_version)
 
         if params.get('filter[module_id]'):
-
             query = query.filter_by(module_id=params.get('filter[module_id]'))
 
         return query
@@ -1142,7 +1178,6 @@ class RuntimeEventDetailResource(JSONAPIDetailResource):
 
 
 class RuntimeTypeListResource(JSONAPIListResource):
-
     cache_expiration_time = 3600
 
     def get_query(self):
@@ -1151,9 +1186,7 @@ class RuntimeTypeListResource(JSONAPIListResource):
         )
 
     def apply_filters(self, query, params):
-
         if params.get('filter[latestRuntime]'):
-
             latest_runtime = Runtime.query(self.session).order_by(Runtime.spec_version.desc()).first()
 
             query = query.filter_by(spec_version=latest_runtime.spec_version)
@@ -1162,7 +1195,6 @@ class RuntimeTypeListResource(JSONAPIListResource):
 
 
 class RuntimeModuleListResource(JSONAPIListResource):
-
     cache_expiration_time = 3600
 
     def get_query(self):
@@ -1171,9 +1203,7 @@ class RuntimeModuleListResource(JSONAPIListResource):
         )
 
     def apply_filters(self, query, params):
-
         if params.get('filter[latestRuntime]'):
-
             latest_runtime = Runtime.query(self.session).order_by(Runtime.spec_version.desc()).first()
 
             query = query.filter_by(spec_version=latest_runtime.spec_version)
@@ -1225,7 +1255,6 @@ class RuntimeModuleDetailResource(JSONAPIDetailResource):
 class RuntimeStorageDetailResource(JSONAPIDetailResource):
 
     def get_item(self, item_id):
-
         if len(item_id.split('-')) != 3:
             return None
 
@@ -1238,7 +1267,6 @@ class RuntimeStorageDetailResource(JSONAPIDetailResource):
 
 
 class RuntimeConstantListResource(JSONAPIListResource):
-
     cache_expiration_time = 3600
 
     def get_query(self):
@@ -1250,7 +1278,6 @@ class RuntimeConstantListResource(JSONAPIListResource):
 class RuntimeConstantDetailResource(JSONAPIDetailResource):
 
     def get_item(self, item_id):
-
         if len(item_id.split('-')) != 3:
             return None
 

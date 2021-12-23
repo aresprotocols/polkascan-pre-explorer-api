@@ -208,6 +208,7 @@ class BlockTotal(BaseModel):
     total_events_module = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_events_extrinsic = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_events_finalization = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    total_events_transfer = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_logs = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_blocktime = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_accounts = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
