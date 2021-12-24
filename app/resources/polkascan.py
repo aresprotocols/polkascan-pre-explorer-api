@@ -111,6 +111,12 @@ class ChainDataResource(JSONAPIDetailResource):
         # validator_keys = substrate.rpc_request('state_getKeys', [storage_key_prefix, block.hash]).get('result')
         # validators = [storage_key[-64:] for storage_key in rpc_result if len(storage_key) == 146]
         # total_validators = len(validator_keys)
+        if block_total is None:
+            block_total = BlockTotal()
+            block_total.total_extrinsics_signed = 0
+            block_total.total_events_transfer = 0
+            block_total.total_accounts = 0
+
         resp = {
             'total_extrinsics_signed': int(block_total.total_extrinsics_signed),
             'total_events_transfer': int(block_total.total_events_transfer),
