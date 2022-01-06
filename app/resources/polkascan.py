@@ -32,14 +32,31 @@ from app import settings, utils
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
     RuntimeCallParam, RuntimeEventAttribute, RuntimeType, RuntimeStorage, Account, Session, Contract, \
     BlockTotal, SessionValidator, Log, AccountIndex, RuntimeConstant, SessionNominator, \
-    RuntimeErrorMessage, SearchIndex, AccountInfoSnapshot
+    RuntimeErrorMessage, SearchIndex, AccountInfoSnapshot, SymbolPriceSnapshot
 from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDetailResource, BaseResource
 from app.utils.ss58 import ss58_decode, ss58_encode
 from scalecodec.base import RuntimeConfiguration
 from substrateinterface import SubstrateInterface
 
 
+class OracleDetailResources(JSONAPIDetailResource):
+    def get_item(self, item_id):
+        symbol_prices: [SymbolPriceSnapshot] = SymbolPriceSnapshot.query(self.session).filter_by(
+            symbol=item_id).order_by(SymbolPriceSnapshot.created_at.desc()).limit(1000)[:1000]
+        data = {
+            'name': 'Price',
+            'type': 'line',
+            'data': [
+                [price.created_at, price.integer_part]
+                for price in symbol_prices
+            ]
+        }
+        return data
+
+
 class ChainDataResource(JSONAPIDetailResource):
+    cache_expiration_time = 0
+
     def get_item(self, item_id):
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()

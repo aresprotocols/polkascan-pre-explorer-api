@@ -63,6 +63,7 @@ app = falcon.API(middleware=[
 
 # Application routes
 app.add_route('/chain', polkascan.ChainDataResource())
+app.add_route('/symbol/{symbol}', polkascan.OracleDetailResources())
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())
