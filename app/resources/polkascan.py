@@ -40,6 +40,11 @@ from substrateinterface import SubstrateInterface
 
 
 class OracleDetailResources(JSONAPIDetailResource):
+    cache_expiration_time = 0
+
+    def get_item_url_name(self):
+        return 'symbol'
+
     def get_item(self, item_id):
         symbol_prices: [SymbolPriceSnapshot] = SymbolPriceSnapshot.query(self.session).filter_by(
             symbol=item_id).order_by(SymbolPriceSnapshot.created_at.desc()).limit(1000)[:1000]
