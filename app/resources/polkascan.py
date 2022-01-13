@@ -70,7 +70,8 @@ class ChainDataResource(JSONAPIDetailResource):
             url=settings.SUBSTRATE_RPC_URL,
             type_registry_preset=settings.TYPE_REGISTRY
         )
-        substrate.runtime_config.update_type_registry_types({"EraIndex": "u32", "BalanceOf": "Balance"})
+        substrate.runtime_config.update_type_registry_types(
+            {"EraIndex": "u32", "BalanceOf": "Balance", "ValidatorId": "AccountId"})
 
         block_hash = substrate.get_chain_finalised_head()
         finalized_block = substrate.get_block_number(block_hash)
@@ -81,13 +82,13 @@ class ChainDataResource(JSONAPIDetailResource):
         else:
             total_issuance = total_issuance.value
 
-        total_validators = utils.query_storage(pallet_name='Staking', storage_name='CounterForValidators',
+        total_validators = utils.query_storage(pallet_name='Session', storage_name='Validators',
                                                substrate=substrate,
                                                block_hash=block_hash)
         if total_validators is None:
             total_validators = 0
         else:
-            total_validators = float(total_validators.value)
+            total_validators = len(total_validators.value)
 
         current_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
                                           substrate=substrate,
