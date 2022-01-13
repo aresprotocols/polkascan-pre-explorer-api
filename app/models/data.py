@@ -323,7 +323,10 @@ class Extrinsic(BaseModel):
 
     address_length = sa.Column(sa.String(2))
     address = sa.Column(sa.String(64), index=True)
-    account = relationship(Account, foreign_keys=[address], primaryjoin=address == Account.id, lazy='subquery')
+    account = None
+    # account = relationship(Account, foreign_keys=[address], primaryjoin=address == Account.id, lazy='subquery')
+    # account = relationship(Account, secondary=[address], secondaryjoin=address == Account.id, lazy='subquery')
+    # account = relationship(Account, primaryjoin=address == Account.id, lazy='subquery')
 
     account_index = sa.Column(sa.String(16), index=True)
     account_idx = sa.Column(sa.Integer(), index=True)

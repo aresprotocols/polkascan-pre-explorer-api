@@ -138,6 +138,9 @@ class JSONAPIListResource(JSONAPIResource, ABC):
         page_size = min(int(params.get('page[size]', 25)), MAX_RESOURCE_PAGE_SIZE)
         return query[page * page_size: page * page_size + page_size]
 
+    def serialize_items(self, items):
+        return [self.serialize_item(item) for item in items]
+
     def process_get_response(self, req, resp, **kwargs):
         items = self.get_query()
         items = self.apply_filters(items, req.params)
@@ -146,7 +149,7 @@ class JSONAPIListResource(JSONAPIResource, ABC):
         return {
             'status': falcon.HTTP_200,
             'media': self.get_jsonapi_response(
-                data=[self.serialize_item(item) for item in items],
+                data=self.serialize_items(items),
                 meta=self.get_meta(),
                 included=self.get_included_items(items)
             ),

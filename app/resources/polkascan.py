@@ -272,6 +272,15 @@ class ExtrinsicListResource(JSONAPIListResource):
             data['attributes']['account'] = item.account.serialize()
         return data
 
+    def serialize_items(self, items):
+        addresses = [item.address for item in items]
+        accounts = Account.query(self.session).filter(Account.id.in_(addresses))
+        for account in accounts:
+            for item in items:
+                if item.address == account.id:
+                    item.account = account
+        return [self.serialize_item(item) for item in items]
+
     # def get_included_items(self, items):
     #     # Include account items
     #     return [item.account.serialize() for item in items if item.account]
