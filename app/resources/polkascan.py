@@ -139,11 +139,13 @@ class ChainDataResource(JSONAPIDetailResource):
             block_total.total_extrinsics_signed = 0
             block_total.total_events_transfer = 0
             block_total.total_accounts = 0
+            block_total.total_treasury_burn = 0
 
         resp = {
             'total_extrinsics_signed': int(block_total.total_extrinsics_signed),
             'total_events_transfer': int(block_total.total_events_transfer),
             'total_account': int(block_total.total_accounts),
+            'total_treasury_burn': int(block_total.total_treasury_burn),
             'total_issuance': str(total_issuance),
             'finalized_block': finalized_block,
             'total_validators': int(total_validators),

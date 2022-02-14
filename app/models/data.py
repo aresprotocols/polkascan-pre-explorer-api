@@ -216,6 +216,7 @@ class BlockTotal(BaseModel):
     total_accounts_reaped = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_sessions_new = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     total_contracts_new = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    total_treasury_burn = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
 
     def serialize_formatting_hook(self, obj_dict):
 
