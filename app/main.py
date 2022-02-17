@@ -31,11 +31,11 @@ from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
 from app.middleware.cache import CacheMiddleware
 
-from app.resources import polkascan
+from app.resources import polkascan, charts
 
-import logging
-logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+# import logging
+# logging.basicConfig()
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 
 # Database connection
@@ -44,14 +44,14 @@ session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 # Define cache region
 cache_region = make_region().configure(
-            'dogpile.cache.redis',
-            arguments={
-                'host': DOGPILE_CACHE_SETTINGS['host'],
-                'port': DOGPILE_CACHE_SETTINGS['port'],
-                'db': DOGPILE_CACHE_SETTINGS['db'],
-                'redis_expiration_time': 60*60*2,   # 2 hours
-                'distributed_lock': True
-            }
+    'dogpile.cache.redis',
+    arguments={
+        'host': DOGPILE_CACHE_SETTINGS['host'],
+        'port': DOGPILE_CACHE_SETTINGS['port'],
+        'db': DOGPILE_CACHE_SETTINGS['db'],
+        'redis_expiration_time': 60 * 60 * 2,  # 2 hours
+        'distributed_lock': True
+    }
 )
 
 # Define application
@@ -63,7 +63,8 @@ app = falcon.API(middleware=[
 
 # Application routes
 app.add_route('/chain', polkascan.ChainDataResource())
-app.add_route('/symbol/{symbol}', polkascan.OracleDetailResources())
+app.add_route('/symbols', polkascan.SymbolListResource())
+app.add_route('/symbol/{symbol}', polkascan.OracleDetailResource())
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())
@@ -100,3 +101,4 @@ app.add_route('/session/nominator', polkascan.SessionNominatorListResource())
 app.add_route('/session/validator/{item_id}', polkascan.SessionValidatorDetailResource())
 app.add_route('/contract/contract', polkascan.ContractListResource())
 app.add_route('/contract/contract/{item_id}', polkascan.ContractDetailResource())
+app.add_route('/charts', charts.ExtrinsicSigned())

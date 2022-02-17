@@ -19,27 +19,66 @@
 #  polkascan.py
 from hashlib import blake2b
 
-import binascii
-
 import falcon
 import pytz
 from dogpile.cache.api import NO_VALUE
+from scalecodec.base import RuntimeConfiguration
 from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
-from sqlalchemy.orm import defer, subqueryload, lazyload, noload
+from sqlalchemy.orm import defer
+from substrateinterface import SubstrateInterface
 
 from app import settings, utils
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
     RuntimeCallParam, RuntimeEventAttribute, RuntimeType, RuntimeStorage, Account, Session, Contract, \
     BlockTotal, SessionValidator, Log, AccountIndex, RuntimeConstant, SessionNominator, \
     RuntimeErrorMessage, SearchIndex, AccountInfoSnapshot, SymbolPriceSnapshot
-from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDetailResource, BaseResource
+from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDetailResource
 from app.utils.ss58 import ss58_decode, ss58_encode
-from scalecodec.base import RuntimeConfiguration
-from substrateinterface import SubstrateInterface
 
 
-class OracleDetailResources(JSONAPIDetailResource):
+class SymbolListResource(JSONAPIListResource):
+    cache_expiration_time = 60
+
+    def get_query(self):
+        block: Block = Block.query(self.session).filter_by(
+            id=self.session.query(func.max(Block.id)).one()[0]).first()
+        substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
+        block_hash = block.hash
+        block_hash = substrate.get_chain_finalised_head()
+
+        substrate.init_runtime(block_hash=block_hash)
+        symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
+                                      substrate=substrate,
+                                      block_hash=block_hash)
+        # # get balances storage prefix
+        # storage_key_prefix = substrate.generate_storage_hash(
+        #     storage_module='AresOracle',
+        #     storage_function='AresAvgPrice'
+        # )
+        #
+        # rpc_result = substrate.rpc_request(
+        #     'state_getKeys',
+        #     [storage_key_prefix, block_hash]
+        # ).get('result')
+        # print(rpc_result[0])
+        # # b = substrate.runtime_config.create_scale_object("text", data=ScaleBytes("0x799655d52cd4bb68423aca99eabb6e851001c54323fdc5c61ea36daa60d1c75e06e6898ab4326be4d2ae8a4fcbe83e40207374782d75736474"))
+        # # b.decode()
+        # # print(b)
+
+        results = []
+        for symbol in symbols:
+            key = symbol.value[0]
+            price = utils.query_storage(pallet_name='AresOracle', storage_name='AresAvgPrice',
+                                        substrate=substrate, block_hash=block_hash, params=[key])
+            if price:
+                results.append(
+                    {"symbol": key, "precision": symbol.value[3], "interval": symbol.value[4], "price": price.value[0]})
+        substrate.close()
+        return results
+
+
+class OracleDetailResource(JSONAPIDetailResource):
     cache_expiration_time = 0
 
     def get_item_url_name(self):
