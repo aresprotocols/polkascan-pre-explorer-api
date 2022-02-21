@@ -24,14 +24,16 @@ from dogpile.cache import make_region
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from substrateinterface import SubstrateInterface
 
+from app import settings
 from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
 from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
 from app.middleware.cache import CacheMiddleware
 
-from app.resources import polkascan, charts
+from app.resources import polkascan, charts, oracle
 
 # import logging
 # logging.basicConfig()
@@ -60,11 +62,12 @@ app = falcon.API(middleware=[
     SQLAlchemySessionManager(session_factory),
     CacheMiddleware(cache_region)
 ])
-
+substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
 # Application routes
 app.add_route('/chain', polkascan.ChainDataResource())
-app.add_route('/symbols', polkascan.SymbolListResource())
-app.add_route('/symbol/{symbol}', polkascan.OracleDetailResource())
+app.add_route('/oracle/symbols', oracle.SymbolListResource(substrate))
+app.add_route('/oracle/symbol/{symbol}', oracle.OracleDetailResource())
+app.add_route('/oracle/reward', oracle.OracleRequestsReward(substrate))
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())
