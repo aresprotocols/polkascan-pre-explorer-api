@@ -219,7 +219,6 @@ class BlockTotal(BaseModel):
     total_treasury_burn = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
 
     def serialize_formatting_hook(self, obj_dict):
-
         if self.author:
             obj_dict['attributes']['author_id'] = self.author
             obj_dict['attributes']['author'] = ss58_encode(self.author.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
@@ -356,13 +355,15 @@ class Extrinsic(BaseModel):
 
         if obj_dict['attributes'].get('address'):
             obj_dict['attributes']['address_id'] = obj_dict['attributes']['address'].replace('0x', '')
-            obj_dict['attributes']['address'] = ss58_encode(obj_dict['attributes']['address'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
+            obj_dict['attributes']['address'] = ss58_encode(obj_dict['attributes']['address'].replace('0x', ''),
+                                                            SUBSTRATE_ADDRESS_TYPE)
 
         for item in obj_dict['attributes'].get('params', []):
             # SS58 format Addresses public keys
             if item['type'] in ['Address', 'AccountId', 'LookupSource'] and item['value']:
                 self.format_address(item)
-            elif item['type'] in ['Vec<Address>', 'Vec<AccountId>', 'Vec<<Lookup as StaticLookup>::Source>'] and item['value']:
+            elif item['type'] in ['Vec<Address>', 'Vec<AccountId>', 'Vec<<Lookup as StaticLookup>::Source>'] and item[
+                'value']:
                 for idx, vec_item in enumerate(item['value']):
                     item['value'][idx] = {
                         'name': idx,
@@ -395,29 +396,30 @@ class Log(BaseModel):
         if self.type_id == LOG_TYPE_AUTHORITIESCHANGE:
 
             for idx, item in enumerate(obj_dict['attributes']['data']['value']):
-                obj_dict['attributes']['data']['value'][idx] = ss58_encode(item.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
+                obj_dict['attributes']['data']['value'][idx] = ss58_encode(item.replace('0x', ''),
+                                                                           SUBSTRATE_ADDRESS_TYPE)
 
         return obj_dict
 
 
 data_session = sa.Table('data_session', BaseModel.metadata,
-    sa.Column('id', sa.Integer(), primary_key=True, autoincrement=False),
-    sa.Column('start_at_block', sa.Integer()),
-    sa.Column('era', sa.Integer()),
-    sa.Column('era_idx', sa.Integer()),
-    sa.Column('created_at_block', sa.Integer(), nullable=False),
-    sa.Column('created_at_extrinsic', sa.Integer()),
-    sa.Column('created_at_event', sa.Integer()),
-    sa.Column('count_validators', sa.Integer()),
-    sa.Column('count_nominators', sa.Integer())
-)
-
+                        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=False),
+                        sa.Column('start_at_block', sa.Integer()),
+                        sa.Column('era', sa.Integer()),
+                        sa.Column('era_idx', sa.Integer()),
+                        sa.Column('created_at_block', sa.Integer(), nullable=False),
+                        sa.Column('created_at_extrinsic', sa.Integer()),
+                        sa.Column('created_at_event', sa.Integer()),
+                        sa.Column('count_validators', sa.Integer()),
+                        sa.Column('count_nominators', sa.Integer())
+                        )
 
 data_session_total = sa.Table('data_session_total', BaseModel.metadata,
-    sa.Column('id', sa.Integer(), sa.ForeignKey('data_session.id'), primary_key=True, autoincrement=False),
-    sa.Column('end_at_block', sa.Integer()),
-    sa.Column('count_blocks', sa.Integer())
-)
+                              sa.Column('id', sa.Integer(), sa.ForeignKey('data_session.id'), primary_key=True,
+                                        autoincrement=False),
+                              sa.Column('end_at_block', sa.Integer()),
+                              sa.Column('count_blocks', sa.Integer())
+                              )
 
 
 class Session(BaseModel):
@@ -446,10 +448,11 @@ class SessionValidator(BaseModel):
     session_id = sa.Column(sa.Integer(), primary_key=True, autoincrement=False)
     rank_validator = sa.Column(sa.Integer(), primary_key=True, autoincrement=False, index=True)
     validator_stash = sa.Column(sa.String(64), index=True)
-    validator_stash_account = relationship(Account, foreign_keys=[validator_stash], primaryjoin=validator_stash == Account.id, lazy='subquery')
+    validator_stash_account = relationship(Account, foreign_keys=[validator_stash],
+                                           primaryjoin=validator_stash == Account.id, lazy='subquery')
     validator_controller = sa.Column(sa.String(64), index=True)
     validator_controller_account = relationship(Account, foreign_keys=[validator_controller],
-                                           primaryjoin=validator_controller == Account.id)
+                                                primaryjoin=validator_controller == Account.id)
     validator_session = sa.Column(sa.String(64), index=True)
     bonded_total = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
     bonded_active = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
@@ -801,3 +804,35 @@ class SymbolSnapshot(BaseModel):
     fraction = sa.Column(sa.Integer, nullable=False)
     auth = sa.Column(sa.JSON(), nullable=True)
     created_at = sa.Column(sa.DateTime(timezone=True), nullable=True)
+
+
+class EraPriceRequest(BaseModel):
+    __tablename__ = 'data_era_price_request'
+
+    era = sa.Column(sa.Integer(), primary_key=True)
+    total_eras = sa.Column(sa.Integer(), nullable=False)
+    era_total_requests = sa.Column(sa.Integer(), nullable=False)
+    era_total_points = sa.Column(sa.Integer(), nullable=False)
+    era_total_fee = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    ended_at = sa.Column(sa.Integer(), nullable=True)
+
+    def serialize_id(self):
+        return self.era
+
+
+class PriceRequest(BaseModel):
+    __tablename__ = 'data_price_request'
+
+    order_id = sa.Column(sa.String(length=100), primary_key=True)
+    created_by = sa.Column(sa.String(length=64), nullable=False)
+    symbols = sa.Column(sa.JSON(), nullable=True)
+    status = sa.Column(sa.Integer(), nullable=False)  # 0: pending,  1: successful, 2: failed
+    prepayment = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    payment = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    auth = sa.Column(sa.JSON(), nullable=True)
+    result = sa.Column(sa.JSON(), nullable=True)
+    created_at = sa.Column(sa.Integer(), nullable=False)
+    ended_at = sa.Column(sa.Integer(), nullable=True)
+
+    def serialize_id(self):
+        return self.order_id

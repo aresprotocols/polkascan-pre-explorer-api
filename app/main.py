@@ -67,6 +67,8 @@ substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_pre
 app.add_route('/chain', polkascan.ChainDataResource())
 app.add_route('/oracle/symbols', oracle.SymbolListResource(substrate))
 app.add_route('/oracle/symbol/{symbol}', oracle.OracleDetailResource())
+app.add_route('/oracle/requests', oracle.OracleRequestListResource())
+app.add_route('/oracle/era_requests', oracle.OracleEraRequests())
 app.add_route('/oracle/reward', oracle.OracleRequestsReward(substrate))
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
