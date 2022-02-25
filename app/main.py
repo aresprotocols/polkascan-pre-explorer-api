@@ -64,7 +64,7 @@ app = falcon.API(middleware=[
 ])
 substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
 # Application routes
-app.add_route('/chain', polkascan.ChainDataResource())
+app.add_route('/chain', polkascan.ChainDataResource(substrate))
 app.add_route('/oracle/symbols', oracle.SymbolListResource(substrate))
 app.add_route('/oracle/symbol/{symbol}', oracle.OracleDetailResource())
 app.add_route('/oracle/requests', oracle.OracleRequestListResource())
