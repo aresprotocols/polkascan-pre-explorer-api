@@ -38,20 +38,22 @@ from app.utils.ss58 import ss58_decode, ss58_encode
 
 
 class ChainDataResource(JSONAPIDetailResource):
-    cache_expiration_time = 0
+    cache_expiration_time = 60
+    substrate: SubstrateInterface = None
+
+    def __init__(self, substrate: SubstrateInterface):
+        self.substrate = substrate
 
     def get_item(self, item_id):
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
 
-        substrate = SubstrateInterface(
-            url=settings.SUBSTRATE_RPC_URL,
-            type_registry_preset=settings.TYPE_REGISTRY
-        )
+        substrate = self.substrate
+        block_hash = substrate.get_chain_finalised_head()
+        substrate.init_runtime(block_hash=block_hash)
         substrate.runtime_config.update_type_registry_types(
             {"EraIndex": "u32", "BalanceOf": "Balance", "ValidatorId": "AccountId"})
 
-        block_hash = substrate.get_chain_finalised_head()
         finalized_block = substrate.get_block_number(block_hash)
         total_issuance = utils.query_storage(pallet_name="Balances", storage_name="TotalIssuance", substrate=substrate,
                                              block_hash=block_hash)
