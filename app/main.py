@@ -19,21 +19,15 @@
 #  main.py
 
 import falcon
-
 from dogpile.cache import make_region
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from substrateinterface import SubstrateInterface
 
-from app import settings
-from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
-
+from app.middleware.cache import CacheMiddleware
 from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
-from app.middleware.cache import CacheMiddleware
-
 from app.resources import polkascan, charts, oracle
+from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
 # import logging
 # logging.basicConfig()
@@ -62,14 +56,13 @@ app = falcon.API(middleware=[
     SQLAlchemySessionManager(session_factory),
     CacheMiddleware(cache_region)
 ])
-substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
 # Application routes
-app.add_route('/chain', polkascan.ChainDataResource(substrate))
-app.add_route('/oracle/symbols', oracle.SymbolListResource(substrate))
+app.add_route('/chain', polkascan.ChainDataResource())
+app.add_route('/oracle/symbols', oracle.SymbolListResource())
 app.add_route('/oracle/symbol/{symbol}', oracle.OracleDetailResource())
 app.add_route('/oracle/requests', oracle.OracleRequestListResource())
 app.add_route('/oracle/era_requests', oracle.OracleEraRequests())
-app.add_route('/oracle/reward', oracle.OracleRequestsReward(substrate))
+app.add_route('/oracle/reward', oracle.OracleRequestsReward())
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())

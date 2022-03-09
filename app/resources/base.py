@@ -23,19 +23,19 @@ import falcon
 from dogpile.cache import CacheRegion
 from dogpile.cache.api import NO_VALUE
 from sqlalchemy.orm import Session
+from substrateinterface import SubstrateInterface
 
+from app import settings
 from app.models.base import BaseModel
 from app.settings import MAX_RESOURCE_PAGE_SIZE, DOGPILE_CACHE_SETTINGS
 
 
 class BaseResource(object):
-
     session: Session
     cache_region: CacheRegion
 
 
 class JSONAPIResource(BaseResource):
-
     cache_expiration_time = None
 
     def apply_filters(self, query, params):
@@ -91,7 +91,8 @@ class JSONAPIResource(BaseResource):
                 result['included'] = []
 
             for key, objects in relationships.items():
-                result['data']['relationships'][key] = {'data': [{'type': obj.serialize_type, 'id': obj.serialize_id()} for obj in objects]}
+                result['data']['relationships'][key] = {
+                    'data': [{'type': obj.serialize_type, 'id': obj.serialize_id()} for obj in objects]}
                 result['included'] += [obj.serialize() for obj in objects]
 
         return result
@@ -123,7 +124,6 @@ class JSONAPIResource(BaseResource):
 
 
 class JSONAPIListResource(JSONAPIResource, ABC):
-
     cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_list_cache_expiration_time']
 
     def get_included_items(self, items):
@@ -158,7 +158,6 @@ class JSONAPIListResource(JSONAPIResource, ABC):
 
 
 class JSONAPIDetailResource(JSONAPIResource, ABC):
-
     cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_detail_cache_expiration_time']
 
     def get_item_url_name(self):
@@ -194,3 +193,7 @@ class JSONAPIDetailResource(JSONAPIResource, ABC):
             }
 
         return response
+
+
+def create_substrate() -> SubstrateInterface:
+    return SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)

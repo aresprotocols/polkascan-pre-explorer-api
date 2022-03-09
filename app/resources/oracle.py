@@ -7,17 +7,21 @@ from substrateinterface.exceptions import SubstrateRequestException
 
 from app import utils
 from app.models.data import SymbolSnapshot, Block, PriceRequest, EraPriceRequest
-from app.resources.base import JSONAPIDetailResource, JSONAPIListResource
+from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 
 
 class SymbolListResource(JSONAPIListResource):
     cache_expiration_time = 60
+    substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
-        self.substrate = substrate
+    # def __init__(self, substrate: SubstrateInterface):
+    #     self.substrate = substrate
 
     def get_query(self):
+        substrate = create_substrate()
+        self.substrate = substrate
+
         block: Block = Block.query(self.session).filter_by(
             id=self.session.query(func.max(Block.id)).one()[0]).first()
         substrate = self.substrate
@@ -39,6 +43,12 @@ class SymbolListResource(JSONAPIListResource):
                     {"symbol": key, "precision": symbol.value[3], "interval": symbol.value[4], "price": price.value[0]})
         substrate.close()
         return results
+
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
+
 
 
 class OracleRequestListResource(JSONAPIListResource):
@@ -81,11 +91,12 @@ class OracleRequestsReward(JSONAPIDetailResource):
     cache_expiration_time = 60
     substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
-        self.substrate = substrate
+    # def __init__(self, substrate: SubstrateInterface):
+    #     self.substrate = substrate
 
     def get_item(self, item_id):
-        substrate = self.substrate
+        substrate = create_substrate()
+        self.substrate = substrate
         block_hash = substrate.get_chain_finalised_head()
 
         storage_key_prefix = substrate.generate_storage_hash(storage_module="OracleFinance",
@@ -188,6 +199,12 @@ class OracleRequestsReward(JSONAPIDetailResource):
         #     account = result['account']
         #     print(era, account)
         #     print(claim_exist(int(era), account, keys))
-            # result['account'] = scalecodec.ss58_encode(account.replace('0x', ''), 34)
+        # result['account'] = scalecodec.ss58_encode(account.replace('0x', ''), 34)
         results.sort(key=lambda r: (r['era'], r['account']))
         return {"total_reward": total_reward, "data": results}
+
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
+

@@ -27,28 +27,31 @@ from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
 from sqlalchemy.orm import defer
 from substrateinterface import SubstrateInterface
+from websocket import WebSocket
 
 from app import settings, utils
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
     RuntimeCallParam, RuntimeEventAttribute, RuntimeType, RuntimeStorage, Account, Session, Contract, \
     BlockTotal, SessionValidator, Log, AccountIndex, RuntimeConstant, SessionNominator, \
     RuntimeErrorMessage, SearchIndex, AccountInfoSnapshot
-from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDetailResource
+from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDetailResource, create_substrate
 from app.utils.ss58 import ss58_decode, ss58_encode
 
 
 class ChainDataResource(JSONAPIDetailResource):
     cache_expiration_time = 60
+
     substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
-        self.substrate = substrate
+    # def __init__(self):
+    # self.substrate = substrate
 
     def get_item(self, item_id):
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
 
-        substrate = self.substrate
+        substrate = create_substrate()
+        self.substrate = substrate
         block_hash = substrate.get_chain_finalised_head()
         substrate.init_runtime(block_hash=block_hash)
         substrate.runtime_config.update_type_registry_types(
@@ -133,6 +136,11 @@ class ChainDataResource(JSONAPIDetailResource):
             'inflation': inflation
         }
         return resp
+
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
 
 
 class BlockDetailsResource(JSONAPIDetailResource):
