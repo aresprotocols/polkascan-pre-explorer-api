@@ -124,6 +124,10 @@ class ChainDataResource(JSONAPIDetailResource):
             block_total.total_accounts = 0
             block_total.total_treasury_burn = 0
 
+        symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
+                                      substrate=substrate,
+                                      block_hash=block_hash)
+
         resp = {
             'total_extrinsics_signed': int(block_total.total_extrinsics_signed),
             'total_events_transfer': int(block_total.total_events_transfer),
@@ -133,7 +137,8 @@ class ChainDataResource(JSONAPIDetailResource):
             'finalized_block': finalized_block,
             'total_validators': int(total_validators),
             'total_stake': str(total_stake),
-            'inflation': inflation
+            'inflation': inflation,
+            'total_symbols': len(symbols)
         }
         return resp
 

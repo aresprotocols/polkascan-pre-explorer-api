@@ -49,8 +49,6 @@ class SymbolListResource(JSONAPIListResource):
                 filter(and_(SymbolSnapshot.symbol.__eq__(key))). \
                 order_by(SymbolSnapshot.block_id.desc()).first()
 
-            # for symbol_key, price, block_id, block_time in symbol_prices:
-            #     if symbol_key == key:
             results.append({
                 "symbol": key,
                 "precision": symbol.value[3],
