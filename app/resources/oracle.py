@@ -57,7 +57,7 @@ class SymbolListResource(JSONAPIListResource):
                 "interval": symbol.value[4] * 6,
                 "price": symbol_price[1],
                 "block_id": symbol_price[2],
-                "created_at": symbol_price[3],
+                "created_at": symbol_price[3].strftime('%Y-%m-%d %H:%M:%S'),
             })
             # break
         substrate.close()
