@@ -33,7 +33,7 @@ from app import settings, utils
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
     RuntimeCallParam, RuntimeEventAttribute, RuntimeType, RuntimeStorage, Account, Session, Contract, \
     BlockTotal, SessionValidator, Log, AccountIndex, RuntimeConstant, SessionNominator, \
-    RuntimeErrorMessage, SearchIndex, AccountInfoSnapshot
+    RuntimeErrorMessage, SearchIndex, AccountInfoSnapshot, PriceRequest
 from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDetailResource, create_substrate
 from app.utils.ss58 import ss58_decode, ss58_encode
 
@@ -127,6 +127,7 @@ class ChainDataResource(JSONAPIDetailResource):
         symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
                                       substrate=substrate,
                                       block_hash=block_hash)
+        total_price_requests = self.session.query(func.count(PriceRequest.order_id)).scalar()
 
         resp = {
             'total_extrinsics_signed': int(block_total.total_extrinsics_signed),
@@ -138,7 +139,8 @@ class ChainDataResource(JSONAPIDetailResource):
             'total_validators': int(total_validators),
             'total_stake': str(total_stake),
             'inflation': inflation,
-            'total_symbols': len(symbols)
+            'total_symbols': len(symbols),
+            'total_price_requests': total_price_requests
         }
         return resp
 
