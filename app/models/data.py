@@ -795,7 +795,7 @@ class SearchIndexType(BaseModel):
 
 
 class SymbolSnapshot(BaseModel):
-    __tablename__ = 'data_symbol_price_snapshot'
+    __tablename__ = 'data_symbol_snapshot'
 
     block_id = sa.Column(sa.Integer(), primary_key=True, index=True)
     symbol = sa.Column(sa.String(30), primary_key=True, index=True)

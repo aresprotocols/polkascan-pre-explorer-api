@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import load_only
 from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import SubstrateRequestException
-
+from sqlalchemy import and_, or_
 from app import utils
 from app.models.data import SymbolSnapshot, Block, PriceRequest, EraPriceRequest
 from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate
@@ -29,18 +29,37 @@ class SymbolListResource(JSONAPIListResource):
         # block_hash = substrate.get_chain_finalised_head()
 
         substrate.init_runtime(block_hash=block_hash)
+
+        # symbol_prices: [SymbolSnapshot] = SymbolSnapshot.query(self.session).filter_by(
+        #     symbol=item_id).order_by(SymbolSnapshot.block_id.desc()).limit(1000)[:1000]
         symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
                                       substrate=substrate,
                                       block_hash=block_hash)
+        symbol_keys = [symbol.value[0] for symbol in symbols]
 
+        # symbol_prices = self.session.query(SymbolSnapshot).filter(
+        #     and_(User.group_id.__eq__(chat.input_entity.channel_id), User.deleted_at.__eq__(None),
+        #          and_(User.created_at.__eq__(None), User.updated_at.__eq__(None)))).all()
         results = []
         for symbol in symbols:
             key = symbol.value[0]
-            price = utils.query_storage(pallet_name='AresOracle', storage_name='AresAvgPrice',
-                                        substrate=substrate, block_hash=block_hash, params=[key])
-            if price:
-                results.append(
-                    {"symbol": key, "precision": symbol.value[3], "interval": symbol.value[4], "price": price.value[0]})
+            symbol_price: [] = self.session.query(SymbolSnapshot.symbol, SymbolSnapshot.price, SymbolSnapshot.block_id,
+                                                  Block.datetime). \
+                join(Block, Block.id == SymbolSnapshot.block_id). \
+                filter(and_(SymbolSnapshot.symbol.__eq__(key))). \
+                order_by(SymbolSnapshot.block_id.desc()).first()
+
+            # for symbol_key, price, block_id, block_time in symbol_prices:
+            #     if symbol_key == key:
+            results.append({
+                "symbol": key,
+                "precision": symbol.value[3],
+                "interval": symbol.value[4] * 6,
+                "price": symbol_price[1],
+                "block_id": symbol_price[2],
+                "created_at": symbol_price[3],
+            })
+            # break
         substrate.close()
         return results
 
@@ -48,7 +67,6 @@ class SymbolListResource(JSONAPIListResource):
         if self.substrate:
             self.substrate.close()
         return super().process_get_response(req, resp, **kwargs)
-
 
 
 class OracleRequestListResource(JSONAPIListResource):
@@ -126,7 +144,8 @@ class OracleRequestsReward(JSONAPIDetailResource):
                                                                          storage_function="AskEraPoint",
                                                                          params=[era_key],
                                                                          hashers=["Blake2_128Concat"])
-                    keys = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
+                    keys = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get(
+                        "result")
                     points = substrate.rpc_request("state_queryStorageAt", [keys, block_hash]).get("result")
                     total_points = 0
                     for point in points[0]['changes']:
@@ -150,7 +169,8 @@ class OracleRequestsReward(JSONAPIDetailResource):
             era_key = substrate.runtime_config.create_scale_object(type_string=param_types[0])
             era_key.encode(int(era))
             storage_key_prefix = substrate.generate_storage_hash(storage_module="OracleFinance",
-                                                                 storage_function="AskEraPayment", params=[era_key],
+                                                                 storage_function="AskEraPayment",
+                                                                 params=[era_key],
                                                                  hashers=param_hashers[0:1])
             keys = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
             response = substrate.rpc_request(method="state_queryStorageAt", params=[keys, block_hash])
@@ -207,4 +227,3 @@ class OracleRequestsReward(JSONAPIDetailResource):
         if self.substrate:
             self.substrate.close()
         return super().process_get_response(req, resp, **kwargs)
-
