@@ -15,13 +15,10 @@ class SymbolListResource(JSONAPIListResource):
     cache_expiration_time = 60
     substrate: SubstrateInterface = None
 
-    # def __init__(self, substrate: SubstrateInterface):
-    #     self.substrate = substrate
-
-    def get_query(self):
-        substrate = create_substrate()
+    def __init__(self, substrate: SubstrateInterface):
         self.substrate = substrate
 
+    def get_query(self):
         block: Block = Block.query(self.session).filter_by(
             id=self.session.query(func.max(Block.id)).one()[0]).first()
         substrate = self.substrate
@@ -30,8 +27,6 @@ class SymbolListResource(JSONAPIListResource):
 
         substrate.init_runtime(block_hash=block_hash)
 
-        # symbol_prices: [SymbolSnapshot] = SymbolSnapshot.query(self.session).filter_by(
-        #     symbol=item_id).order_by(SymbolSnapshot.block_id.desc()).limit(1000)[:1000]
         symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
                                       substrate=substrate,
                                       block_hash=block_hash)
@@ -48,23 +43,22 @@ class SymbolListResource(JSONAPIListResource):
                 join(Block, Block.id == SymbolSnapshot.block_id). \
                 filter(and_(SymbolSnapshot.symbol.__eq__(key))). \
                 order_by(SymbolSnapshot.block_id.desc()).first()
-
-            results.append({
-                "symbol": key,
-                "precision": symbol.value[3],
-                "interval": symbol.value[4] * 6,
-                "price": symbol_price[1],
-                "block_id": symbol_price[2],
-                "created_at": symbol_price[3].strftime('%Y-%m-%d %H:%M:%S'),
-            })
-            # break
+            if symbol_price:
+                results.append({
+                    "symbol": key,
+                    "precision": symbol.value[3],
+                    "interval": symbol.value[4] * 6,
+                    "price": symbol_price[1],
+                    "block_id": symbol_price[2],
+                    "created_at": symbol_price[3].strftime('%Y-%m-%d %H:%M:%S'),
+                })
         substrate.close()
         return results
 
-    def process_get_response(self, req, resp, **kwargs):
-        if self.substrate:
-            self.substrate.close()
-        return super().process_get_response(req, resp, **kwargs)
+    # def process_get_response(self, req, resp, **kwargs):
+    #     if self.substrate:
+    #         self.substrate.close()
+    #     return super().process_get_response(req, resp, **kwargs)
 
 
 class OracleRequestListResource(JSONAPIListResource):
@@ -107,12 +101,11 @@ class OracleRequestsReward(JSONAPIDetailResource):
     cache_expiration_time = 60
     substrate: SubstrateInterface = None
 
-    # def __init__(self, substrate: SubstrateInterface):
-    #     self.substrate = substrate
+    def __init__(self, substrate: SubstrateInterface):
+        self.substrate = substrate
 
     def get_item(self, item_id):
-        substrate = create_substrate()
-        self.substrate = substrate
+        substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
 
         storage_key_prefix = substrate.generate_storage_hash(storage_module="OracleFinance",
@@ -221,7 +214,41 @@ class OracleRequestsReward(JSONAPIDetailResource):
         results.sort(key=lambda r: (r['era'], r['account']))
         return {"total_reward": total_reward, "data": results}
 
-    def process_get_response(self, req, resp, **kwargs):
-        if self.substrate:
-            self.substrate.close()
-        return super().process_get_response(req, resp, **kwargs)
+    # def process_get_response(self, req, resp, **kwargs):
+    #     if self.substrate:
+    #         self.substrate.close()
+    #     return super().process_get_response(req, resp, **kwargs)
+
+
+class OraclePreCheckTaskListResource(JSONAPIListResource):
+    cache_expiration_time = 300
+    substrate: SubstrateInterface = None
+
+    def __init__(self, substrate: SubstrateInterface):
+        self.substrate = substrate
+
+    def get_query(self):
+        substrate = self.substrate
+        # block: Block = Block.query(self.session).filter_by(
+        #     id=self.session.query(func.max(Block.id)).one()[0]).first()
+        # block_hash = block.hash
+        block_hash = substrate.get_chain_finalised_head()
+
+        substrate.init_runtime(block_hash=block_hash)
+        tasks = utils.query_storage(pallet_name='AresOracle', storage_name='PreCheckTaskList',
+                                    substrate=substrate, block_hash=block_hash)
+        result = []
+        all_final_results = utils.query_all_storage(pallet_name='AresOracle', storage_name='FinalPerCheckResult',
+                                                    substrate=substrate, block_hash=block_hash)
+
+        for (validator, ares_authority, block_number) in tasks.value:
+            obj = {
+                "validator": validator,
+                "ares_authority": ares_authority,
+                "block_number": block_number,
+                "status": None
+            }
+            if validator in all_final_results:
+                obj['status'] = all_final_results[validator].value[1]
+            result.append(obj)
+        return result

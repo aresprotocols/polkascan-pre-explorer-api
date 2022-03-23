@@ -18,4 +18,4 @@
 #
 #  __init__.py
 
-from .storage import query_storage
+from .storage import query_storage, query_all_storage

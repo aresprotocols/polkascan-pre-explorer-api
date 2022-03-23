@@ -43,15 +43,14 @@ class ChainDataResource(JSONAPIDetailResource):
 
     substrate: SubstrateInterface = None
 
-    # def __init__(self):
-    # self.substrate = substrate
+    def __init__(self, substrate: SubstrateInterface):
+        self.substrate = substrate
 
     def get_item(self, item_id):
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
 
-        substrate = create_substrate()
-        self.substrate = substrate
+        substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
         substrate.init_runtime(block_hash=block_hash)
         substrate.runtime_config.update_type_registry_types(
@@ -144,10 +143,10 @@ class ChainDataResource(JSONAPIDetailResource):
         }
         return resp
 
-    def process_get_response(self, req, resp, **kwargs):
-        if self.substrate:
-            self.substrate.close()
-        return super().process_get_response(req, resp, **kwargs)
+    # def process_get_response(self, req, resp, **kwargs):
+    #     # if self.substrate:
+    #     #     self.substrate.close()
+    #     return super().process_get_response(req, resp, **kwargs)
 
 
 class BlockDetailsResource(JSONAPIDetailResource):

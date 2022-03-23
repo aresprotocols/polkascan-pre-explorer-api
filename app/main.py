@@ -18,21 +18,23 @@
 #
 #  main.py
 
+import logging
+
 import falcon
 from dogpile.cache import make_region
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from substrateinterface import SubstrateInterface
 
+from app import settings
 from app.middleware.cache import CacheMiddleware
 from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
 from app.resources import polkascan, charts, oracle
 from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
-# import logging
-# logging.basicConfig()
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # Database connection
 engine = create_engine(DB_CONNECTION, echo=DEBUG, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
@@ -56,13 +58,15 @@ app = falcon.API(middleware=[
     SQLAlchemySessionManager(session_factory),
     CacheMiddleware(cache_region)
 ])
+substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
 # Application routes
-app.add_route('/chain', polkascan.ChainDataResource())
-app.add_route('/oracle/symbols', oracle.SymbolListResource())
+app.add_route('/chain', polkascan.ChainDataResource(substrate=substrate))
+app.add_route('/oracle/symbols', oracle.SymbolListResource(substrate=substrate))
 app.add_route('/oracle/symbol/{symbol}', oracle.OracleDetailResource())
 app.add_route('/oracle/requests', oracle.OracleRequestListResource())
 app.add_route('/oracle/era_requests', oracle.OracleEraRequests())
-app.add_route('/oracle/reward', oracle.OracleRequestsReward())
+app.add_route('/oracle/pre_check_tasks', oracle.OraclePreCheckTaskListResource(substrate=substrate))
+app.add_route('/oracle/reward', oracle.OracleRequestsReward(substrate=substrate))
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())
