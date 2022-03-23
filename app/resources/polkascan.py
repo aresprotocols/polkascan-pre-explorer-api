@@ -43,10 +43,12 @@ class ChainDataResource(JSONAPIDetailResource):
 
     substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
+    def __init__(self, substrate: SubstrateInterface = None):
         self.substrate = substrate
 
     def get_item(self, item_id):
+        if self.substrate is None:
+            self.substrate = create_substrate()
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
 
@@ -143,10 +145,10 @@ class ChainDataResource(JSONAPIDetailResource):
         }
         return resp
 
-    # def process_get_response(self, req, resp, **kwargs):
-    #     # if self.substrate:
-    #     #     self.substrate.close()
-    #     return super().process_get_response(req, resp, **kwargs)
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
 
 
 class BlockDetailsResource(JSONAPIDetailResource):

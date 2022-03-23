@@ -19,6 +19,8 @@ class SymbolListResource(JSONAPIListResource):
         self.substrate = substrate
 
     def get_query(self):
+        if self.substrate is None:
+            self.substrate = create_substrate()
         block: Block = Block.query(self.session).filter_by(
             id=self.session.query(func.max(Block.id)).one()[0]).first()
         substrate = self.substrate
@@ -55,10 +57,10 @@ class SymbolListResource(JSONAPIListResource):
         substrate.close()
         return results
 
-    # def process_get_response(self, req, resp, **kwargs):
-    #     if self.substrate:
-    #         self.substrate.close()
-    #     return super().process_get_response(req, resp, **kwargs)
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
 
 
 class OracleRequestListResource(JSONAPIListResource):
@@ -101,10 +103,12 @@ class OracleRequestsReward(JSONAPIDetailResource):
     cache_expiration_time = 60
     substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
+    def __init__(self, substrate: SubstrateInterface = None):
         self.substrate = substrate
 
     def get_item(self, item_id):
+        if self.substrate is None:
+            self.substrate = create_substrate()
         substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
 
@@ -214,20 +218,22 @@ class OracleRequestsReward(JSONAPIDetailResource):
         results.sort(key=lambda r: (r['era'], r['account']))
         return {"total_reward": total_reward, "data": results}
 
-    # def process_get_response(self, req, resp, **kwargs):
-    #     if self.substrate:
-    #         self.substrate.close()
-    #     return super().process_get_response(req, resp, **kwargs)
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
 
 
 class OraclePreCheckTaskListResource(JSONAPIListResource):
     cache_expiration_time = 300
     substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
+    def __init__(self, substrate: SubstrateInterface = None):
         self.substrate = substrate
 
     def get_query(self):
+        if self.substrate is None:
+            self.substrate = create_substrate()
         substrate = self.substrate
         # block: Block = Block.query(self.session).filter_by(
         #     id=self.session.query(func.max(Block.id)).one()[0]).first()
@@ -252,3 +258,8 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
                 obj['status'] = all_final_results[validator].value[1]
             result.append(obj)
         return result
+
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
