@@ -419,8 +419,8 @@ class ExtrinsicDetailResource(JSONAPIDetailResource):
                 if 'Module' in extrinsic_failed_event.attributes[0]['value']:
 
                     error = RuntimeErrorMessage.query(self.session).filter_by(
-                        module_index=extrinsic_failed_event.attributes[0]['value']['Module']['index'],
-                        index=extrinsic_failed_event.attributes[0]['value']['Module']['error'],
+                        module_index=extrinsic_failed_event.attributes[0]['value']['Module'][0],
+                        index=extrinsic_failed_event.attributes[0]['value']['Module'][1],
                         spec_version=item.spec_version_id
                     ).first()
 
