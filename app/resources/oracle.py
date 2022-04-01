@@ -100,7 +100,7 @@ class OracleDetailResource(JSONAPIDetailResource):
 
 
 class OracleRequestsReward(JSONAPIDetailResource):
-    cache_expiration_time = 60
+    cache_expiration_time = 3600
     substrate: SubstrateInterface = None
 
     def __init__(self, substrate: SubstrateInterface = None):
@@ -114,6 +114,8 @@ class OracleRequestsReward(JSONAPIDetailResource):
 
         storage_key_prefix = substrate.generate_storage_hash(storage_module="OracleFinance",
                                                              storage_function="RewardEra")  # 未领取
+
+        print(f"request reward {storage_key_prefix} {block_hash}")
         rpc_result = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
 
         substrate.init_runtime(block_hash=block_hash)
