@@ -195,15 +195,14 @@ class JSONAPIDetailResource(JSONAPIResource, ABC):
 
 
 def create_substrate() -> SubstrateInterface:
-    cache_region = make_region().configure(
-        'dogpile.cache.redis',
-        arguments={
-            'host': DOGPILE_CACHE_SETTINGS['host'],
-            'port': DOGPILE_CACHE_SETTINGS['port'],
-            'db': DOGPILE_CACHE_SETTINGS['db'],
-            'redis_expiration_time': 60 * 60 * 12,  # 12 hours
-            'distributed_lock': True
-        }
-    )
-    return SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY,
-                              cache_region=cache_region)
+    # cache_region = make_region().configure(
+    #     'dogpile.cache.redis',
+    #     arguments={
+    #         'host': DOGPILE_CACHE_SETTINGS['host'],
+    #         'port': DOGPILE_CACHE_SETTINGS['port'],
+    #         'db': DOGPILE_CACHE_SETTINGS['db'],
+    #         'redis_expiration_time': 60 * 60 * 12,  # 12 hours
+    #         'distributed_lock': True
+    #     }
+    # )
+    return SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
