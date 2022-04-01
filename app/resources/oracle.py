@@ -15,7 +15,7 @@ class SymbolListResource(JSONAPIListResource):
     cache_expiration_time = 3600
     substrate: SubstrateInterface = None
 
-    def __init__(self, substrate: SubstrateInterface):
+    def __init__(self, substrate: SubstrateInterface = None):
         self.substrate = substrate
 
     def get_query(self):

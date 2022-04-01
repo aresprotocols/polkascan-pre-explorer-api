@@ -62,9 +62,10 @@ class ChainDataResource(JSONAPIDetailResource):
             self.substrate = create_substrate()
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
-
+        block: Block = Block.query(self.session).filter_by(id=block_total.id).first()
+        block_hash = block.hash
         substrate = self.substrate
-        block_hash = substrate.get_chain_finalised_head()
+        # block_hash = substrate.get_chain_finalised_head()
         substrate.init_runtime(block_hash=block_hash)
         substrate.runtime_config.update_type_registry_types(
             {"EraIndex": "u32", "BalanceOf": "Balance", "ValidatorId": "AccountId"})
