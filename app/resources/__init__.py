@@ -19,3 +19,4 @@
 #  __init__.py
 
 
+from .base import metadata_store

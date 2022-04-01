@@ -20,13 +20,15 @@
 from abc import ABC, abstractmethod
 
 import falcon
-from dogpile.cache import CacheRegion, make_region
+from dogpile.cache import CacheRegion
 from dogpile.cache.api import NO_VALUE
 from sqlalchemy.orm import Session
 from substrateinterface import SubstrateInterface
 
-from app import settings
+from app import settings, resources
 from app.settings import MAX_RESOURCE_PAGE_SIZE, DOGPILE_CACHE_SETTINGS
+
+metadata_store = {}
 
 
 class BaseResource(object):
@@ -194,15 +196,15 @@ class JSONAPIDetailResource(JSONAPIResource, ABC):
         return response
 
 
+class AresSubstrateInterface(SubstrateInterface):
+
+    def init_runtime(self, block_hash=None, block_id=None):
+        super().init_runtime(block_hash=block_hash, block_id=block_id)
+        self.ss58_format = None
+        resources.metadata_store = self.metadata_cache
+
+
 def create_substrate() -> SubstrateInterface:
-    # cache_region = make_region().configure(
-    #     'dogpile.cache.redis',
-    #     arguments={
-    #         'host': DOGPILE_CACHE_SETTINGS['host'],
-    #         'port': DOGPILE_CACHE_SETTINGS['port'],
-    #         'db': DOGPILE_CACHE_SETTINGS['db'],
-    #         'redis_expiration_time': 60 * 60 * 12,  # 12 hours
-    #         'distributed_lock': True
-    #     }
-    # )
-    return SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
+    a = AresSubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
+    a.metadata_cache = resources.metadata_store
+    return a
