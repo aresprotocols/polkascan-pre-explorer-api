@@ -201,7 +201,9 @@ class AresSubstrateInterface(SubstrateInterface):
     def init_runtime(self, block_hash=None, block_id=None):
         super().init_runtime(block_hash=block_hash, block_id=block_id)
         self.ss58_format = None
-        resources.metadata_store = self.metadata_cache
+        for key in self.metadata_cache:
+            if key not in resources.metadata_store:
+                resources.metadata_store[key] = self.metadata_cache[key]
 
 
 def create_substrate() -> SubstrateInterface:
