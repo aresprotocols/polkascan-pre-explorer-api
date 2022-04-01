@@ -31,8 +31,8 @@ from app.middleware.sessionmanager import SQLAlchemySessionManager
 from app.resources import polkascan, charts, oracle
 from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
-logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # Database connection
 engine = create_engine(DB_CONNECTION, echo=DEBUG, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
