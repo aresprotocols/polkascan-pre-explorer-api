@@ -12,7 +12,7 @@ from app.settings import SUBSTRATE_ADDRESS_TYPE
 
 
 class SymbolListResource(JSONAPIListResource):
-    cache_expiration_time = 60
+    cache_expiration_time = 3600
     substrate: SubstrateInterface = None
 
     def __init__(self, substrate: SubstrateInterface):

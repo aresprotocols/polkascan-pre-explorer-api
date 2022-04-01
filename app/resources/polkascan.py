@@ -25,9 +25,8 @@ from dogpile.cache.api import NO_VALUE
 from scalecodec.base import RuntimeConfiguration
 from scalecodec.type_registry import load_type_registry_preset
 from sqlalchemy import func, tuple_, or_
-from sqlalchemy.orm import defer
+from sqlalchemy.orm import defer, load_only
 from substrateinterface import SubstrateInterface
-from websocket import WebSocket
 
 from app import settings, utils
 from app.models.data import Block, Extrinsic, Event, RuntimeCall, RuntimeEvent, Runtime, RuntimeModule, \
@@ -38,8 +37,20 @@ from app.resources.base import JSONAPIResource, JSONAPIListResource, JSONAPIDeta
 from app.utils.ss58 import ss58_decode, ss58_encode
 
 
-class ChainDataResource(JSONAPIDetailResource):
+class LatestBlockResource(JSONAPIDetailResource):
     cache_expiration_time = 60
+
+    def get_item(self, item_id):
+        fields = ['id']
+        block: Block = Block.query(self.session).options(load_only(*fields)).order_by(Block.id.desc()).first()
+        resp = {
+            'block': block.id
+        }
+        return resp
+
+
+class ChainDataResource(JSONAPIDetailResource):
+    cache_expiration_time = 3600
 
     substrate: SubstrateInterface = None
 
