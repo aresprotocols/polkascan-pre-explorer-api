@@ -115,7 +115,7 @@ class OracleRequestsReward(JSONAPIDetailResource):
         storage_key_prefix = substrate.generate_storage_hash(storage_module="OracleFinance",
                                                              storage_function="RewardEra")  # 未领取
 
-        print(f"request reward {storage_key_prefix} {block_hash}")
+        print(f"request RewardEra {storage_key_prefix} {block_hash}")
         rpc_result = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
 
         substrate.init_runtime(block_hash=block_hash)
@@ -141,6 +141,7 @@ class OracleRequestsReward(JSONAPIDetailResource):
                                                                          storage_function="AskEraPoint",
                                                                          params=[era_key],
                                                                          hashers=["Blake2_128Concat"])
+                    print(f"request AskEraPoint {storage_key_prefix} {block_hash}")
                     keys = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get(
                         "result")
                     points = substrate.rpc_request("state_queryStorageAt", [keys, block_hash]).get("result")
