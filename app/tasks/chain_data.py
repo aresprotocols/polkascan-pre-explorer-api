@@ -14,10 +14,6 @@ from app.tasks.base import BaseTask
 class ChainDataTask(BaseTask):
     session: 'Session'
     substrate: 'SubstrateInterface'
-    cache_region: CacheRegion
-
-    def __init__(self, cache_region: CacheRegion):
-        self.cache_region = cache_region
 
     def before(self):
         _scoped_session = scoped_session(session_factory)
@@ -26,6 +22,9 @@ class ChainDataTask(BaseTask):
 
     def after(self):
         self.substrate.close()
+        self.session.close()
+        self.substrate = None
+        self.session = None
 
     def post(self):
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
@@ -123,4 +122,4 @@ class ChainDataTask(BaseTask):
             'total_symbols': len(symbols),
             'total_price_requests': total_price_requests
         }
-        self.cache_region.set("ares_chain_data", resp)
+        self.cache_region().set("ares_chain_data", resp)

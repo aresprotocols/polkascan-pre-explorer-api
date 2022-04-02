@@ -5,9 +5,7 @@ from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from dogpile.cache import make_region
 
-from app.settings import DOGPILE_CACHE_SETTINGS
 from app.tasks.chain_data import ChainDataTask
 from app.tasks.chart import AresChartTask
 from app.tasks.reward import RequestRewardTask
@@ -20,22 +18,12 @@ if __name__ == '__main__':
     executors = {'default': ThreadPoolExecutor(20), 'processpool': ProcessPoolExecutor(5)}
     job_defaults = {'coalesce': False, 'max_instances': 5}
 
-    cache_region = make_region().configure(
-        'dogpile.cache.redis',
-        arguments={
-            'host': DOGPILE_CACHE_SETTINGS['host'],
-            'port': DOGPILE_CACHE_SETTINGS['port'],
-            'db': DOGPILE_CACHE_SETTINGS['db'],
-            'redis_expiration_time': 60 * 60 * 2,  # 2 hours
-            'distributed_lock': False
-        }
-    )
     scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults)
     scheduler.start()
-    ares_chart = AresChartTask(cache_region=cache_region)
-    request_reward = RequestRewardTask(cache_region=cache_region)
-    symbols_price = SymbolsPriceTask(cache_region=cache_region)
-    chain_data = ChainDataTask(cache_region=cache_region)
+    ares_chart = AresChartTask()
+    request_reward = RequestRewardTask()
+    symbols_price = SymbolsPriceTask()
+    chain_data = ChainDataTask()
     while True:
         ares_chart.run()
         request_reward.run()

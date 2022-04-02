@@ -13,10 +13,7 @@ from app.tasks.base import BaseTask
 class SymbolsPriceTask(BaseTask):
     substrate: 'SubstrateInterface'
     session: 'Session'
-    cache_region: CacheRegion
 
-    def __init__(self, cache_region: CacheRegion):
-        self.cache_region = cache_region
 
     def before(self):
         self.substrate = create_substrate()
@@ -26,6 +23,8 @@ class SymbolsPriceTask(BaseTask):
     def after(self):
         self.substrate.close()
         self.session.close()
+        self.session = None
+        self.substrate = None
 
     def post(self):
         substrate = self.substrate
@@ -52,4 +51,4 @@ class SymbolsPriceTask(BaseTask):
                     "block_id": symbol_price[2],
                     "created_at": symbol_price[3].strftime('%Y-%m-%d %H:%M:%S'),
                 })
-        self.cache_region.set("ares_symbols", results)
+        self.cache_region().set("ares_symbols", results)

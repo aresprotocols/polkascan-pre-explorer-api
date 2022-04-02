@@ -1,5 +1,4 @@
 import scalecodec
-from dogpile.cache import CacheRegion
 from scalecodec import ScaleBytes, GenericPalletMetadata, GenericStorageEntryMetadata
 from substrateinterface import SubstrateInterface
 from substrateinterface.exceptions import SubstrateRequestException
@@ -12,16 +11,13 @@ from app.tasks.base import BaseTask
 
 class RequestRewardTask(BaseTask):
     substrate: 'SubstrateInterface'
-    cache_region: CacheRegion
-
-    def __init__(self, cache_region: CacheRegion):
-        self.cache_region = cache_region
 
     def before(self):
         self.substrate = create_substrate()
 
     def after(self):
         self.substrate.close()
+        self.substrate = None
 
     def post(self):
         substrate = self.substrate
@@ -106,4 +102,4 @@ class RequestRewardTask(BaseTask):
                 })
 
         results.sort(key=lambda r: (r['era'], r['account']))
-        self.cache_region.set("ares_request_reward", {"total_reward": total_reward, "data": results})
+        self.cache_region().set("ares_request_reward", {"total_reward": total_reward, "data": results})

@@ -11,10 +11,6 @@ from app.tasks.base import BaseTask
 
 class AresChartTask(BaseTask):
     session: 'Session'
-    cache_region: CacheRegion
-
-    def __init__(self, cache_region: CacheRegion):
-        self.cache_region = cache_region
 
     def before(self):
         _scoped_session = scoped_session(session_factory)
@@ -22,6 +18,7 @@ class AresChartTask(BaseTask):
 
     def after(self):
         self.session.close()
+        self.session = None
 
     def post(self):
         limit = 14
@@ -157,4 +154,4 @@ class AresChartTask(BaseTask):
             _data = charts[2]['attributes']['data']['series'][0]['data']
             _data.append([time, int(max_total_extrinsics_signed - min_total_extrinsics_signed)])
 
-        self.cache_region.set("ares_charts", charts)
+        self.cache_region().set("ares_charts", charts)
