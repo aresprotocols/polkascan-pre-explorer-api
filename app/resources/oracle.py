@@ -1,66 +1,16 @@
-import scalecodec.utils.ss58
-from scalecodec import GenericPalletMetadata, GenericStorageEntryMetadata, ScaleBytes
-from sqlalchemy import func
 from sqlalchemy.orm import load_only
 from substrateinterface import SubstrateInterface
-from substrateinterface.exceptions import SubstrateRequestException
-from sqlalchemy import and_, or_
+
 from app import utils
-from app.models.data import SymbolSnapshot, Block, PriceRequest, EraPriceRequest
+from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest
 from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate
-from app.settings import SUBSTRATE_ADDRESS_TYPE
 
 
 class SymbolListResource(JSONAPIListResource):
-    cache_expiration_time = 3600
-    substrate: SubstrateInterface = None
-
-    def __init__(self, substrate: SubstrateInterface = None):
-        self.substrate = substrate
+    cache_expiration_time = 3600 + 300
 
     def get_query(self):
-        if self.substrate is None:
-            self.substrate = create_substrate()
-        block: Block = Block.query(self.session).filter_by(
-            id=self.session.query(func.max(Block.id)).one()[0]).first()
-        substrate = self.substrate
-        block_hash = block.hash
-        # block_hash = substrate.get_chain_finalised_head()
-
-        substrate.init_runtime(block_hash=block_hash)
-
-        symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
-                                      substrate=substrate,
-                                      block_hash=block_hash)
-        symbol_keys = [symbol.value[0] for symbol in symbols]
-
-        # symbol_prices = self.session.query(SymbolSnapshot).filter(
-        #     and_(User.group_id.__eq__(chat.input_entity.channel_id), User.deleted_at.__eq__(None),
-        #          and_(User.created_at.__eq__(None), User.updated_at.__eq__(None)))).all()
-        results = []
-        for symbol in symbols:
-            key = symbol.value[0]
-            symbol_price: [] = self.session.query(SymbolSnapshot.symbol, SymbolSnapshot.price, SymbolSnapshot.block_id,
-                                                  Block.datetime). \
-                join(Block, Block.id == SymbolSnapshot.block_id). \
-                filter(and_(SymbolSnapshot.symbol.__eq__(key))). \
-                order_by(SymbolSnapshot.block_id.desc()).first()
-            if symbol_price:
-                results.append({
-                    "symbol": key,
-                    "precision": symbol.value[3],
-                    "interval": symbol.value[4] * 6,
-                    "price": symbol_price[1],
-                    "block_id": symbol_price[2],
-                    "created_at": symbol_price[3].strftime('%Y-%m-%d %H:%M:%S'),
-                })
-        substrate.close()
-        return results
-
-    def process_get_response(self, req, resp, **kwargs):
-        if self.substrate:
-            self.substrate.close()
-        return super().process_get_response(req, resp, **kwargs)
+        return self.cache_region.get("ares_symbols", self.cache_expiration_time)
 
 
 class OracleRequestListResource(JSONAPIListResource):
@@ -100,19 +50,10 @@ class OracleDetailResource(JSONAPIDetailResource):
 
 
 class OracleRequestsReward(JSONAPIDetailResource):
-    cache_expiration_time = 3600
-    substrate: SubstrateInterface = None
-
-    def __init__(self, substrate: SubstrateInterface = None):
-        self.substrate = substrate
+    cache_expiration_time = 3600 + 300
 
     def get_item(self, item_id):
         return self.cache_region.get("ares_request_reward", self.cache_expiration_time)
-
-    def process_get_response(self, req, resp, **kwargs):
-        if self.substrate:
-            self.substrate.close()
-        return super().process_get_response(req, resp, **kwargs)
 
 
 class OraclePreCheckTaskListResource(JSONAPIListResource):
