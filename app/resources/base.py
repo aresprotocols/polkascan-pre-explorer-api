@@ -207,6 +207,6 @@ class AresSubstrateInterface(SubstrateInterface):
 
 
 def create_substrate() -> SubstrateInterface:
-    a = AresSubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
+    a = AresSubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY,cache_region=None)
     a.metadata_cache = resources.metadata_store
     return a

@@ -8,12 +8,12 @@ from apscheduler.triggers.cron import CronTrigger
 from dogpile.cache import make_region
 
 from app.settings import DOGPILE_CACHE_SETTINGS
+from app.tasks.chain_data import ChainDataTask
 from app.tasks.chart import AresChartTask
 from app.tasks.reward import RequestRewardTask
 from app.tasks.symbols import SymbolsPriceTask
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
 
 if __name__ == '__main__':
     jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')}
@@ -34,11 +34,13 @@ if __name__ == '__main__':
     scheduler.start()
     ares_chart = AresChartTask(cache_region=cache_region)
     request_reward = RequestRewardTask(cache_region=cache_region)
-    symbols_chart = SymbolsPriceTask(cache_region=cache_region)
+    symbols_price = SymbolsPriceTask(cache_region=cache_region)
+    chain_data = ChainDataTask(cache_region=cache_region)
     while True:
         ares_chart.run()
         request_reward.run()
-        symbols_chart.run()
+        symbols_price.run()
+        chain_data.run()
         scheduler.add_job(
             ares_chart.run,
             trigger=CronTrigger(year="*", month="*", day="*", hour="*/6", minute="50", second="0"),
@@ -54,10 +56,17 @@ if __name__ == '__main__':
         )
         time.sleep(1)
         scheduler.add_job(
-            symbols_chart.run,
+            symbols_price.run,
             trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="15", second="0"),
             # args=[],
             name="symbols price",
+        )
+        time.sleep(1)
+        scheduler.add_job(
+            chain_data.run,
+            trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="30", second="0"),
+            # args=[],
+            name="chain data",
         )
         while True:
             time.sleep(120)
