@@ -7,7 +7,7 @@ from app.resources.base import JSONAPIDetailResource
 
 
 class ExtrinsicSigned(JSONAPIDetailResource):
-    cache_expiration_time = 3600
+    cache_expiration_time = 3600 * 12
 
     def get_item(self, item_id):
         limit = 14
