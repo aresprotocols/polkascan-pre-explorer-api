@@ -45,7 +45,7 @@ cache_region = make_region().configure(
         'host': DOGPILE_CACHE_SETTINGS['host'],
         'port': DOGPILE_CACHE_SETTINGS['port'],
         'db': DOGPILE_CACHE_SETTINGS['db'],
-        'redis_expiration_time': 60 * 60 * 2,  # 2 hours
+        'redis_expiration_time': 60 * 60 * 6,  # 6 hours
         'distributed_lock': True
     }
 )
