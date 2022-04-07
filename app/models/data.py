@@ -836,3 +836,11 @@ class PriceRequest(BaseModel):
 
     def serialize_id(self):
         return self.order_id
+
+    def serialize_formatting_hook(self, obj_dict):
+        if self.auth:
+            for symbol_key in self.auth:
+                auths = self.auth[symbol_key]
+                r = [ss58_encode(auth.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE) for auth in auths]
+                obj_dict['attributes']['auth'][symbol_key] = r
+        return obj_dict

@@ -22,6 +22,8 @@ class OracleRequestListResource(JSONAPIListResource):
 
 
 class OracleEraRequests(JSONAPIListResource):
+    cache_region = 3600
+
     def get_query(self):
         era_price_requests: [EraPriceRequest] = self.session.query(EraPriceRequest).options().order_by(
             EraPriceRequest.era.desc())
