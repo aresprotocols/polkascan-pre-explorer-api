@@ -4,6 +4,8 @@ from substrateinterface import SubstrateInterface
 from app import utils
 from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest
 from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate
+from app.settings import SUBSTRATE_ADDRESS_TYPE
+from app.utils.ss58 import ss58_encode
 
 
 class SymbolListResource(JSONAPIListResource):
@@ -83,7 +85,7 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
 
         for (validator, ares_authority, block_number) in tasks.value:
             obj = {
-                "validator": validator,
+                "validator": ss58_encode(validator.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
                 "ares_authority": ares_authority,
                 "block_number": block_number,
                 "status": None
