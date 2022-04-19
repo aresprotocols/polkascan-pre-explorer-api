@@ -1,8 +1,9 @@
+from sqlalchemy import func
 from sqlalchemy.orm import load_only
 from substrateinterface import SubstrateInterface
 
 from app import utils
-from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest
+from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest, Block
 from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 from app.utils.ss58 import ss58_encode
@@ -94,6 +95,39 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
                 obj['status'] = all_final_results[validator].value[1]
             result.append(obj)
         return result
+
+    def process_get_response(self, req, resp, **kwargs):
+        if self.substrate:
+            self.substrate.close()
+        return super().process_get_response(req, resp, **kwargs)
+
+
+class OracleAresAuthorityResource(JSONAPIDetailResource):
+    cache_expiration_time = 100
+    substrate: SubstrateInterface = None
+
+    def __init__(self, substrate: SubstrateInterface = None):
+        self.substrate = substrate
+
+    def get_item_url_name(self):
+        return 'key'
+
+    def get_item(self, item_id):
+        if self.substrate is None:
+            self.substrate = create_substrate()
+        substrate = self.substrate
+        # block: Block = Block.query(self.session).filter_by(
+        #     id=self.session.query(func.max(Block.id)).one()[0]).first()
+        # block_hash = block.hash
+        block_hash = substrate.get_chain_finalised_head()
+        key = int(item_id, 0)
+        substrate.init_runtime(block_hash=block_hash)
+        a = utils.query_storage(pallet_name='AresOracle', storage_name='LocalXRay',
+                                substrate=substrate, block_hash=block_hash, params=[key])
+
+        if len(a.value) > 2:
+            return a.value[2]
+        return None
 
     def process_get_response(self, req, resp, **kwargs):
         if self.substrate:
