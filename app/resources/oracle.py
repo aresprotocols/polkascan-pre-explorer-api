@@ -1,10 +1,10 @@
-from sqlalchemy import func
+import falcon
 from sqlalchemy.orm import load_only
 from substrateinterface import SubstrateInterface
 
 from app import utils
-from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest, Block
-from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate
+from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest
+from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate, JSONAPIResource
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 from app.utils.ss58 import ss58_encode
 
@@ -102,17 +102,32 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
         return super().process_get_response(req, resp, **kwargs)
 
 
-class OracleAresAuthorityResource(JSONAPIDetailResource):
-    cache_expiration_time = 100
+class OracleAresAuthorityResource(JSONAPIResource):
+    cache_expiration_time = 0
     substrate: SubstrateInterface = None
 
     def __init__(self, substrate: SubstrateInterface = None):
         self.substrate = substrate
 
-    def get_item_url_name(self):
-        return 'key'
+    def process_get_response(self, req, resp, **kwargs):
+        host_key_param = kwargs.get("key")
+        authority_key = kwargs.get("auth")
+        item = self.get_item(host_key_param, authority_key)
+        response = {
+            'status': falcon.HTTP_200,
+            'media': self.get_jsonapi_response(
+                data=self.serialize_item(item),
+                relationships={},
+                meta=self.get_meta()
+            ),
+            'cacheable': True
+        }
+        if self.substrate:
+            self.substrate.close()
+        return response
+        # return super().process_get_response(req, resp, **kwargs)
 
-    def get_item(self, item_id):
+    def get_item(self, host_key, authority_key):
         if self.substrate is None:
             self.substrate = create_substrate()
         substrate = self.substrate
@@ -120,16 +135,31 @@ class OracleAresAuthorityResource(JSONAPIDetailResource):
         #     id=self.session.query(func.max(Block.id)).one()[0]).first()
         # block_hash = block.hash
         block_hash = substrate.get_chain_finalised_head()
-        key = int(item_id, 0)
+        key = int(host_key, 0)
         substrate.init_runtime(block_hash=block_hash)
         a = utils.query_storage(pallet_name='AresOracle', storage_name='LocalXRay',
                                 substrate=substrate, block_hash=block_hash, params=[key])
 
-        if len(a.value) > 2:
-            return a.value[2]
-        return None
+        # host_key exist
+        if a and len(a.value) > 2:
+            authority_keys = a.value[2]
+            created_at = a.value[0]
 
-    def process_get_response(self, req, resp, **kwargs):
-        if self.substrate:
-            self.substrate.close()
-        return super().process_get_response(req, resp, **kwargs)
+            if authority_key in authority_keys:
+                return "exist"
+            else:
+                current_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
+                                                  substrate=substrate, block_hash=block_hash)
+                current_era = current_era.value
+                pre_block_hash = substrate.get_block_hash(created_at)
+                substrate.init_runtime(block_hash=pre_block_hash)
+                pre_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
+                                              substrate=substrate, block_hash=pre_block_hash)
+                pre_era = pre_era.value
+                if current_era - pre_era <= 1:
+                    return "The set time did ont exceed 1 era. please wait"
+                else:
+                    return "Does not match on-chain setting"
+        # return "Submit feedback to the project party"
+        return ""
+
