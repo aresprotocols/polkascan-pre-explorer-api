@@ -10,10 +10,10 @@ from app.utils.ss58 import ss58_encode
 
 
 class SymbolListResource(JSONAPIListResource):
-    cache_expiration_time = 3600 + 300
+    cache_expiration_time = 0
 
     def get_query(self):
-        return self.cache_region.get("ares_symbols", self.cache_expiration_time)
+        return self.cache_region.get("ares_symbols")
 
 
 class OracleRequestListResource(JSONAPIListResource):
@@ -55,10 +55,10 @@ class OracleDetailResource(JSONAPIDetailResource):
 
 
 class OracleRequestsReward(JSONAPIDetailResource):
-    cache_expiration_time = 3600 + 300
+    cache_expiration_time = 0
 
     def get_item(self, item_id):
-        return self.cache_region.get("ares_request_reward", self.cache_expiration_time)
+        return self.cache_region.get("ares_request_reward")
 
 
 class OraclePreCheckTaskListResource(JSONAPIListResource):
@@ -103,7 +103,7 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
 
 
 class OracleAresAuthorityResource(JSONAPIResource):
-    cache_expiration_time = 0
+    cache_expiration_time = 3600
     substrate: SubstrateInterface = None
 
     def __init__(self, substrate: SubstrateInterface = None):
