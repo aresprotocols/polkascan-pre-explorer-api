@@ -231,7 +231,9 @@ class OracleAresAuthorityResource(JSONAPIResource):
             check_result_createbn = pre_check_result[0]
             check_result_status = pre_check_result[1]
             # 比对结果
-            if check_result_status == "Prohibit":
+            if check_result_status == "Pass":
+                return "OK"
+            elif check_result_status == "Prohibit":
                 # 这种情况也可以给出一个新的提示“请检查 werahouse配置”
                 return "Please check the werahouse configuration"
             else:
