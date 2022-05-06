@@ -168,6 +168,14 @@ class OracleAresAuthorityResource(JSONAPIResource):
     # search_authority = web.request.search_authority
     def get_data(self, host_key, search_authority):
 
+        # 查看对应的 search_authority 是否已经是验证人，如果是则不需要之后的判断
+        ares_validators = chain.aresOracle.authorities()
+        for validator_data in ares_validators :
+            # validator_data[1] 是 ares-authority
+            if validator_data[1] == search_authority :
+                return "OK 无需比对已经是验证人"
+
+
         # 通过 host_key 获取查询人对应本地的Ares-authorities列表。
         xray_data = chain.aresOracle.localXRay.get(host_key)
 
@@ -179,7 +187,6 @@ class OracleAresAuthorityResource(JSONAPIResource):
         xray_authorities = xray_data[2]
 
         # 检查链上验证人是否与本地用户数据匹配
-
         if False == xray_authorities.include(search_authority) :
             # 表示第一种错误
             return "Does not match on - chain settings"
@@ -231,9 +238,7 @@ class OracleAresAuthorityResource(JSONAPIResource):
             check_result_createbn = pre_check_result[0]
             check_result_status = pre_check_result[1]
             # 比对结果
-            if check_result_status == "Pass":
-                return "OK"
-            elif check_result_status == "Prohibit":
+            if check_result_status == "Prohibit":
                 # 这种情况也可以给出一个新的提示“请检查 werahouse配置”
                 return "Please check the werahouse configuration"
             else:
