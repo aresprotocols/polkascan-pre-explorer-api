@@ -214,7 +214,7 @@ class OracleAresAuthorityResource(JSONAPIResource):
         diff_bn = lastest_bn - match_data.submit_bn
 
         # 获取session长度
-        session_length = 600
+        session_length = 100
 
         # 获取era长度
         ear_length = chain.staking.sessionsPerEra() * session_length
@@ -232,10 +232,10 @@ class OracleAresAuthorityResource(JSONAPIResource):
                 return "The set time did not exceed 1 era, please wait."
             else:
                 # 这种情况是因为该ares-authority没能成功发起offchain请求，原因不明。
-                return "Submit feedback to the project party."
+                return "Please check the werahouse configuration."
         else:
             # 提取数据
-            check_result_createbn = pre_check_result[0]
+            _check_result_createbn = pre_check_result[0]
             check_result_status = pre_check_result[1]
             # 比对结果
             if check_result_status == "Prohibit":
