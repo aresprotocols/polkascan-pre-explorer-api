@@ -163,3 +163,81 @@ class OracleAresAuthorityResource(JSONAPIResource):
         # return "Submit feedback to the project party"
         return ""
 
+    # 参数
+    # host_key = web.request.host_key
+    # search_authority = web.request.search_authority
+    def get_data(self, host_key, search_authority):
+
+        # 通过 host_key 获取查询人对应本地的Ares-authorities列表。
+        xray_data = chain.aresOracle.localXRay.get(host_key)
+
+        # 数据提交的区块。
+        _xray_submit_bn = xray_data[0]
+        # 数据提交的 weavehouse值。
+        _xray_submit_werahouse = xray_data[1]
+        # 这是一个数组，存储xray-key对应的所有本地验证人。
+        xray_authorities = xray_data[2]
+
+        # 检查链上验证人是否与本地用户数据匹配
+
+        if False == xray_authorities.include(search_authority) :
+            # 表示第一种错误
+            return "Does not match on - chain settings"
+
+        # 获取预检查任务列表
+        pre_check_task_list = chain.aresOracle.preCheckTaskList()
+        # 尝试获取对应匹配的数据
+        match_data = None
+        for task_data in pre_check_task_list:
+            # task_data 存储每一条任务记录，查找对应authority的数据 [0]=StashId,[1]=AuthorityId,[2]任务提交区块
+            if task_data[2] == search_authority:
+                match_data.stash_id = ask_data[0]
+                match_data.authority_id = ask_data[1]
+                match_data.submit_bn = ask_data[2]
+                break  # 退出查找
+
+        if match_data == None:
+            Exception("Impossible, but it can be checked")
+
+            # 获取链上最后的区块
+            lastest_bn = chain.rpc.chain.getHeader()
+
+            # 获取任务提交到当前区块的时间
+            diff_bn = lastest_bn - match_data.submit_bn
+
+            # 获取session长度
+            session_length = 600
+
+            # 获取era长度
+            ear_length = chain.staking.sessionsPerEra() * session_length
+
+            # 计算从任务提交到当前位置跨越了几个era
+            cross_era = diff_bn / ear_length
+
+            # 获取检查结果数据
+            pre_check_result = chain.resOracle.finalPerCheckResult(match_data.stash_id)
+            if pre_check_result == None:
+                # 如果没有找到结果
+                if cross_era < 2:
+                    # 可能还没有到提交的区块，需要稍等一下。
+                    return "The set time did not exceed 1 era, please wait."
+                else:
+                    # 这种情况是因为该ares-authority没能成功发起offchain请求，原因不明。
+                    return "Submit feedback to the project party."
+            else:
+                # 提取数据
+                check_result_createbn = pre_check_result[0]
+                check_result_status = pre_check_result[1]
+                # 比对结果
+                if check_result_status == "Prohibit" :
+                    # 这种情况也可以给出一个新的提示“请检查 werahouse配置”
+                    return "Please check the werahouse configuration"
+                else:
+                    # 这种有结果的，判断返回值的类型
+                    if cross_era < 2:
+                        # 这种情况需要等待下一次选举后才能让其成为验证人。
+                        return "The set time did not exceed 1 era, please wait."
+                    else:
+                        return "Submit feedback to the project party."
+
+
