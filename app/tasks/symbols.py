@@ -43,6 +43,8 @@ class SymbolsPriceTask(BaseTask):
                 join(Block, Block.id == SymbolSnapshot.block_id). \
                 filter(and_(SymbolSnapshot.symbol.__eq__(key))). \
                 order_by(SymbolSnapshot.block_id.desc()).limit(2).all()
+            if len(symbol_prices) == 0:
+                continue
             auths = [ss58_encode(auth.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE) for auth in symbol_prices[0][4]]
             if symbol_prices:
                 if len(symbol_prices) > 1:
