@@ -67,4 +67,5 @@ class SymbolsPriceTask(BaseTask):
                         "created_at": symbol_prices[0][3].strftime('%Y-%m-%d %H:%M:%S'),
                         "auth": auths
                     })
+        results.sort(key=lambda r: r['interval'])
         self.cache_region().set("ares_symbols", results)
