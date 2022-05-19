@@ -78,22 +78,32 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
         block_hash = substrate.get_chain_finalised_head()
 
         substrate.init_runtime(block_hash=block_hash)
-        tasks = utils.query_storage(pallet_name='AresOracle', storage_name='PreCheckTaskList',
-                                    substrate=substrate, block_hash=block_hash)
+        # tasks = utils.query_storage(pallet_name='AresOracle', storage_name='PreCheckTaskList',
+        #                             substrate=substrate, block_hash=block_hash)
         result = []
         all_final_results = utils.query_all_storage(pallet_name='AresOracle', storage_name='FinalPerCheckResult',
                                                     substrate=substrate, block_hash=block_hash)
-        if tasks is not None:
-            for (validator, ares_authority, block_number) in tasks.value:
-                obj = {
-                    "validator": ss58_encode(validator.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                    "ares_authority": ares_authority,
-                    "block_number": block_number,
-                    "status": None
-                }
-                if validator in all_final_results:
-                    obj['status'] = all_final_results[validator].value[1]
-                result.append(obj)
+        for key in all_final_results:
+            task_result = all_final_results[key].value
+            obj = {
+                "validator": ss58_encode(key.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+                "ares_authority": None,
+                "block_number": task_result[0],
+                "status": task_result[1]
+            }
+            result.append(obj)
+        # print("==========")
+        # if tasks is not None:
+        #     for (validator, ares_authority, block_number) in tasks.value:
+        #         obj = {
+        #             "validator": ss58_encode(validator.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
+        #             "ares_authority": ares_authority,
+        #             "block_number": block_number,
+        #             "status": None
+        #         }
+        #         if validator in all_final_results:
+        #             obj['status'] = all_final_results[validator].value[1]
+        #         result.append(obj)
         return result
 
     def process_get_response(self, req, resp, **kwargs):
@@ -146,14 +156,15 @@ class OracleAresAuthorityResource(JSONAPIResource):
         if authority_key in validators:
             return "OK"
 
-        a = utils.query_storage(pallet_name='AresOracle', storage_name='LocalXRay',
-                                substrate=substrate, block_hash=block_hash, params=[key])
+        x_ray = utils.query_storage(pallet_name='AresOracle', storage_name='LocalXRay',
+                                    substrate=substrate, block_hash=block_hash, params=[key])
 
         # host_key exist
-        if a and len(a.value) > 2:
-            authority_keys = a.value[2]
-            created_at = a.value[0]
-            warehouse = a.value[1]
+        if x_ray and len(x_ray.value) > 2:
+            authority_keys = x_ray.value[2]
+            created_at = x_ray.value[0]
+            warehouse = x_ray.value[1]
+            is_validator = x_ray.value[3]
 
             if authority_key not in authority_keys:
                 return "Does not match on-chain setting"
@@ -209,7 +220,7 @@ class OracleAresAuthorityResource(JSONAPIResource):
                             return "OK"
                         elif check_result_status == "Prohibit":
                             # 这种情况也可以给出一个新的提示“请检查 werahouse配置”
-                            return "Please check the werahouse configuration"
+                            return "Please check the warehouse configuration"
                         else:
                             # 这种有结果的，判断返回值的类型
                             if cross_era < 2:
