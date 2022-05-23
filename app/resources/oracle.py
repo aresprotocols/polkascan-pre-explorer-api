@@ -87,7 +87,7 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
             task_result = all_final_results[key].value
             obj = {
                 "validator": ss58_encode(key.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                "ares_authority": None,
+                "ares_authority": task_result[3],
                 "block_number": task_result[0],
                 "status": task_result[1]
             }
