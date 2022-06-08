@@ -259,8 +259,8 @@ class Event(BaseModel):
 
     def serialize_formatting_hook(self, obj_dict):
 
-        for item in obj_dict['attributes']['attributes']:
-            if item['type'] in ['AccountId', 'AuthorityId', 'Address', 'LookupSource'] and item['value']:
+        for item in obj_dict['attributes']:
+            if item['type'] in ['T::AccountId', 'T::AuthorityId', 'Address', 'LookupSource'] and item['value']:
                 # SS58 format AccountId public keys
                 item['orig_value'] = item['value'].replace('0x', '')
                 item['value'] = ss58_encode(item['value'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
@@ -293,7 +293,7 @@ class Event(BaseModel):
                             'value': ss58_encode(other_item['who'].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
                             'orig_value': other_item['who'].replace('0x', '')
                         }
-            elif item['type'] in ['Vec<(AccountId, Balance)>'] and item['value']:
+            elif item['type'] in ['Vec<(T::AccountId, Balance)>'] and item['value']:
                 for idx, vec_item in enumerate(item['value']):
                     item['value'][idx]['account'] = {
                         'name': 'account',
