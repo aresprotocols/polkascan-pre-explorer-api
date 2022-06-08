@@ -259,7 +259,11 @@ class Event(BaseModel):
 
     def serialize_formatting_hook(self, obj_dict):
 
-        for item in obj_dict['attributes']:
+        for _item in obj_dict['attributes']:
+            if len(_item) != 1:
+                return obj_dict
+            else:
+                item = _item[0]
             if item['type'] in ['T::AccountId', 'T::AuthorityId', 'Address', 'LookupSource'] and item['value']:
                 # SS58 format AccountId public keys
                 item['orig_value'] = item['value'].replace('0x', '')
