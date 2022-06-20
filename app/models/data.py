@@ -848,3 +848,20 @@ class PriceRequest(BaseModel):
                 r = [ss58_encode(auth.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE) for auth in auths]
                 obj_dict['attributes']['auth'][symbol_key] = r
         return obj_dict
+
+
+class EstimatesParticipants(BaseModel):
+    __tablename__ = 'data_estimates_participants'
+
+    symbol = sa.Column(sa.String(length=30), primary_key=True, nullable=False)
+    estimate_id = sa.Column(sa.Integer(), primary_key=True, nullable=False)
+    participant = sa.Column(sa.String(length=64), primary_key=True, nullable=False)
+    price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    created_at = sa.Column(sa.Integer(), nullable=False)
+
+    def serialize_id(self):
+        return '{}-{}-{}'.format(self.symbol, self.estimate_id, self.participant)
+
+    def serialize_formatting_hook(self, obj_dict):
+        obj_dict['attributes']['participant'] = ss58_encode(self.participant.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
+        return obj_dict

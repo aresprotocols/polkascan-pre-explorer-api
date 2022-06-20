@@ -28,7 +28,7 @@ from sqlalchemy.orm import sessionmaker
 from app.middleware.cache import CacheMiddleware
 from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
-from app.resources import polkascan, charts, oracle
+from app.resources import polkascan, charts, oracle, estimates
 from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -58,6 +58,8 @@ app = falcon.API(middleware=[
 ])
 # substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
 # Application routes
+### Created by aresprotocal
+app.add_route('/charts', charts.ExtrinsicSigned())
 app.add_route('/chain', polkascan.ChainDataResource())
 app.add_route('/chain/latest', polkascan.LatestBlockResource())
 app.add_route('/oracle/symbols', oracle.SymbolListResource())
@@ -67,6 +69,8 @@ app.add_route('/oracle/era_requests', oracle.OracleEraRequests())
 app.add_route('/oracle/pre_check_tasks', oracle.OraclePreCheckTaskListResource())
 app.add_route('/oracle/ares/author/{key}/{auth}', oracle.OracleAresAuthorityResource())
 app.add_route('/oracle/reward', oracle.OracleRequestsReward())
+app.add_route('/estimate/statistics/{symbol}/{id}', estimates.StatisticsEstimate())
+
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())
@@ -103,4 +107,3 @@ app.add_route('/session/nominator', polkascan.SessionNominatorListResource())
 app.add_route('/session/validator/{item_id}', polkascan.SessionValidatorDetailResource())
 app.add_route('/contract/contract', polkascan.ContractListResource())
 app.add_route('/contract/contract/{item_id}', polkascan.ContractDetailResource())
-app.add_route('/charts', charts.ExtrinsicSigned())
