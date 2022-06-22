@@ -855,8 +855,10 @@ class EstimatesParticipants(BaseModel):
 
     symbol = sa.Column(sa.String(length=30), primary_key=True, nullable=False)
     estimate_id = sa.Column(sa.Integer(), primary_key=True, nullable=False)
+    estimate_type = sa.Column(sa.String(length=30), primary_key=True, nullable=False, index=True)
     participant = sa.Column(sa.String(length=64), primary_key=True, nullable=False)
-    price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=False)
+    price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True)
+    option_index = sa.Column(sa.Integer(), nullable=True)
     created_at = sa.Column(sa.Integer(), nullable=False)
 
     def serialize_id(self):
