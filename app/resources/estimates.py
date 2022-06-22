@@ -6,7 +6,7 @@ from app.resources.base import JSONAPIResource
 
 
 class StatisticsEstimate(JSONAPIResource):
-    cache_expiration_time = 0
+    cache_expiration_time = 60 * 10
 
     def process_get_response(self, req, resp, **kwargs):
         symbol = kwargs.get("symbol")
@@ -29,7 +29,6 @@ class StatisticsEstimate(JSONAPIResource):
             estimate_id=estimate_id
         ).first()
         if tmp and tmp.estimate_type == 'price':
-            logging.info("job start")
             results = EstimatesParticipants.query(self.session).filter_by(symbol=symbol, estimate_id=estimate_id).all()
             items = [row for row in results]
             items.sort(key=lambda r: r.price)
@@ -46,8 +45,4 @@ class StatisticsEstimate(JSONAPIResource):
                                          func.count(EstimatesParticipants.option_index)). \
                 filter_by(symbol=symbol, estimate_id=estimate_id). \
                 group_by(EstimatesParticipants.option_index).all()
-            # logging.info("test", results)
-            # for row in results:
-            #     logging.info(row)
-            # return [(1,2)]
             return [{"index": row[0], "count": row[1]} for row in results]
