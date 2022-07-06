@@ -17,17 +17,20 @@ class SymbolsPriceTask(BaseTask):
     session: 'Session'
 
     def before(self):
+        # print("RUN 1")
         self.substrate = create_substrate()
         _scoped_session = scoped_session(session_factory)
         self.session = _scoped_session()
 
     def after(self):
+        # print("RUN 3")
         self.substrate.close()
         self.session.close()
         self.session = None
         self.substrate = None
 
     def post(self):
+        # print("RUN 2")
         substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
         substrate.init_runtime(block_hash=block_hash)
