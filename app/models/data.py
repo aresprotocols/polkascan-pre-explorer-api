@@ -490,10 +490,14 @@ class SessionValidator(BaseModel):
         else:
             obj_dict['attributes']['validator_controller'] = None
 
+        # TODO:: Fix encode bug, Where insert `validator_session` ?
         obj_dict['attributes']['validator_session_id'] = self.validator_session
         if self.validator_session:
-            obj_dict['attributes']['validator_session'] = ss58_encode(self.validator_session.replace('0x', ''),
-                                                                      SUBSTRATE_ADDRESS_TYPE)
+            try:
+                obj_dict['attributes']['validator_session'] = ss58_encode(self.validator_session.replace('0x', ''),
+                                                                          SUBSTRATE_ADDRESS_TYPE)
+            except Exception:
+                obj_dict['attributes']['validator_session'] = None
         else:
             obj_dict['attributes']['validator_session'] = None
 
