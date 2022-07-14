@@ -324,9 +324,14 @@ class ExtrinsicDetailResource(JSONAPIDetailResource):
                 if 'Module' in extrinsic_failed_event.attributes[0]['value']:
 
                     print('KAMI-DEBUG extrinsic_failed_event =', extrinsic_failed_event.attributes)
+                    failed_module_index = extrinsic_failed_event.attributes[0]['value']['Module'][0]
+                    failed_index = extrinsic_failed_event.attributes[0]['value']['Module'][1]
+                    print('KAMI-DEBUG failed_module_index=', failed_module_index)
+                    print('KAMI-DEBUG failed_index=', failed_index)
+                    print('KAMI-DEBUG spec_version=', item.spec_version_id)
                     error = RuntimeErrorMessage.query(self.session).filter_by(
-                        module_index=extrinsic_failed_event.attributes[0]['value']['Module'][0],
-                        index=extrinsic_failed_event.attributes[0]['value']['Module'][1],
+                        module_index=failed_module_index,
+                        index=failed_index,
                         spec_version=item.spec_version_id
                     ).first()
 
