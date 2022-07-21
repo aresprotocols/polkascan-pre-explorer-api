@@ -35,12 +35,13 @@ class StatisticsEstimate(JSONAPIResource):
             sum_price = 0
             for item in items:
                 sum_price += item.price
+
             return {
                 "total": len(items),
                 "avg": str(sum_price / len(items)),
                 "median": str(items[len(items) // 2].price)
             }
-        if tmp and tmp.estimate_type == 'option':
+        if tmp and tmp.estimate_type == 'range':
             results = self.session.query(EstimatesParticipants.option_index,
                                          func.count(EstimatesParticipants.option_index)). \
                 filter_by(symbol=symbol, estimate_id=estimate_id). \
