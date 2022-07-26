@@ -19,9 +19,9 @@ if __name__ == '__main__':
     ares_chart.run()
     time.sleep(5)
 
-    print("RUN request_reward")
-    request_reward.run()
-    time.sleep(5)
+    # print("RUN request_reward")
+    # request_reward.run()
+    # time.sleep(5)
 
     print("RUN symbols_price")
     symbols_price.run()

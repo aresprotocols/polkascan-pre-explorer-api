@@ -16,6 +16,27 @@ class SymbolListResource(JSONAPIListResource):
         return self.cache_region.get("ares_symbols")
 
 
+# class SymbolHistoryListResource(JSONAPIListResource):
+#     cache_expiration_time = 0
+#
+#     def get_item_url_name(self):
+#         return 'symbol'
+#
+#     def get_item(self, item_id):
+#         symbol_prices: [SymbolSnapshot] = SymbolSnapshot.query(self.session).filter_by(
+#             symbol=item_id).order_by(SymbolSnapshot.block_id.desc()).limit(1000)[:1000]
+#         data = {
+#             'name': 'Price',
+#             'type': 'line',
+#             'data': [
+#                 # TODO fix price
+#                 [price.block_id, price.price]
+#                 for price in symbol_prices
+#             ]
+#         }
+#         return data
+
+
 class OracleRequestListResource(JSONAPIListResource):
     def get_query(self):
         price_requests: [PriceRequest] = self.session.query(PriceRequest).options(
@@ -40,14 +61,20 @@ class OracleDetailResource(JSONAPIDetailResource):
         return 'symbol'
 
     def get_item(self, item_id):
+        print("Kami debug of resources/oracle. run 1")
         symbol_prices: [SymbolSnapshot] = SymbolSnapshot.query(self.session).filter_by(
             symbol=item_id).order_by(SymbolSnapshot.block_id.desc()).limit(1000)[:1000]
         data = {
             'name': 'Price',
             'type': 'line',
             'data': [
-                # TODO fix price
-                [price.block_id, price.price]
+                [
+                    price.block_id,
+                    price.price,
+                    price.fraction,
+                    price.created_at.timestamp(),
+                    [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in price.auth]
+                ]
                 for price in symbol_prices
             ]
         }
