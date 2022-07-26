@@ -2,6 +2,8 @@
 FROM python:3.8-buster
 ENV PYTHONUNBUFFERED 1
 
+RUN apt-get update && apt-get -y install default-mysql-client
+
 # set working directory
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app

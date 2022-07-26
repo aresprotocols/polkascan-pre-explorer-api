@@ -18,5 +18,5 @@ if [ "$ENVIRONMENT" = "dev" ]; then
 fi
 
 if [ "$ENVIRONMENT" = "prod" ]; then
-    gunicorn -b 0.0.0.0:8000 --workers=5 app.main:app --worker-class="egg:meinheld#gunicorn_worker"
+    gunicorn -b 0.0.0.0:8000 --workers=5 app.main:app --worker-class="egg:meinheld#gunicorn_worker" --timeout 120
 fi

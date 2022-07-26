@@ -23,19 +23,20 @@ import falcon
 from dogpile.cache import CacheRegion
 from dogpile.cache.api import NO_VALUE
 from sqlalchemy.orm import Session
+from substrateinterface import SubstrateInterface
 
-from app.models.base import BaseModel
+from app import settings, resources
 from app.settings import MAX_RESOURCE_PAGE_SIZE, DOGPILE_CACHE_SETTINGS
+
+metadata_store = {}
 
 
 class BaseResource(object):
-
     session: Session
     cache_region: CacheRegion
 
 
 class JSONAPIResource(BaseResource):
-
     cache_expiration_time = None
 
     def apply_filters(self, query, params):
@@ -45,7 +46,10 @@ class JSONAPIResource(BaseResource):
         return {}
 
     def serialize_item(self, item):
-        return item.serialize()
+        if hasattr(item, 'serialize'):
+            return item.serialize()
+        else:
+            return item
 
     def process_get_response(self, req, resp, **kwargs):
         return {
@@ -88,7 +92,8 @@ class JSONAPIResource(BaseResource):
                 result['included'] = []
 
             for key, objects in relationships.items():
-                result['data']['relationships'][key] = {'data': [{'type': obj.serialize_type, 'id': obj.serialize_id()} for obj in objects]}
+                result['data']['relationships'][key] = {
+                    'data': [{'type': obj.serialize_type, 'id': obj.serialize_id()} for obj in objects]}
                 result['included'] += [obj.serialize() for obj in objects]
 
         return result
@@ -120,7 +125,6 @@ class JSONAPIResource(BaseResource):
 
 
 class JSONAPIListResource(JSONAPIResource, ABC):
-
     cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_list_cache_expiration_time']
 
     def get_included_items(self, items):
@@ -135,6 +139,9 @@ class JSONAPIListResource(JSONAPIResource, ABC):
         page_size = min(int(params.get('page[size]', 25)), MAX_RESOURCE_PAGE_SIZE)
         return query[page * page_size: page * page_size + page_size]
 
+    def serialize_items(self, items):
+        return [self.serialize_item(item) for item in items]
+
     def process_get_response(self, req, resp, **kwargs):
         items = self.get_query()
         items = self.apply_filters(items, req.params)
@@ -143,7 +150,7 @@ class JSONAPIListResource(JSONAPIResource, ABC):
         return {
             'status': falcon.HTTP_200,
             'media': self.get_jsonapi_response(
-                data=[self.serialize_item(item) for item in items],
+                data=self.serialize_items(items),
                 meta=self.get_meta(),
                 included=self.get_included_items(items)
             ),
@@ -152,7 +159,6 @@ class JSONAPIListResource(JSONAPIResource, ABC):
 
 
 class JSONAPIDetailResource(JSONAPIResource, ABC):
-
     cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_detail_cache_expiration_time']
 
     def get_item_url_name(self):
@@ -188,3 +194,19 @@ class JSONAPIDetailResource(JSONAPIResource, ABC):
             }
 
         return response
+
+
+class AresSubstrateInterface(SubstrateInterface):
+
+    def init_runtime(self, block_hash=None, block_id=None):
+        super().init_runtime(block_hash=block_hash, block_id=block_id)
+        self.ss58_format = None
+        for key in self.metadata_cache:
+            if key not in resources.metadata_store:
+                resources.metadata_store[key] = self.metadata_cache[key]
+
+
+def create_substrate() -> SubstrateInterface:
+    a = AresSubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY,cache_region=None)
+    a.metadata_cache = resources.metadata_store
+    return a

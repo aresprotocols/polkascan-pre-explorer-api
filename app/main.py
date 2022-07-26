@@ -18,21 +18,21 @@
 #
 #  main.py
 
+import logging
+
 import falcon
-
 from dogpile.cache import make_region
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
-
+from app.middleware.cache import CacheMiddleware
 from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
-from app.middleware.cache import CacheMiddleware
+from app.resources import polkascan, charts, oracle, estimates
+from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
-from app.resources import polkascan
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # Database connection
 engine = create_engine(DB_CONNECTION, echo=DEBUG, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
@@ -40,14 +40,14 @@ session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 # Define cache region
 cache_region = make_region().configure(
-            'dogpile.cache.redis',
-            arguments={
-                'host': DOGPILE_CACHE_SETTINGS['host'],
-                'port': DOGPILE_CACHE_SETTINGS['port'],
-                'db': DOGPILE_CACHE_SETTINGS['db'],
-                'redis_expiration_time': 60*60*2,   # 2 hours
-                'distributed_lock': True
-            }
+    'dogpile.cache.redis',
+    arguments={
+        'host': DOGPILE_CACHE_SETTINGS['host'],
+        'port': DOGPILE_CACHE_SETTINGS['port'],
+        'db': DOGPILE_CACHE_SETTINGS['db'],
+        'redis_expiration_time': 60 * 60 * 6,  # 6 hours
+        'distributed_lock': True
+    }
 )
 
 # Define application
@@ -56,8 +56,21 @@ app = falcon.API(middleware=[
     SQLAlchemySessionManager(session_factory),
     CacheMiddleware(cache_region)
 ])
-
+# substrate = SubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY)
 # Application routes
+### Created by aresprotocal
+app.add_route('/charts', charts.ExtrinsicSigned())
+app.add_route('/chain', polkascan.ChainDataResource())
+app.add_route('/chain/latest', polkascan.LatestBlockResource())
+app.add_route('/oracle/symbols', oracle.SymbolListResource())
+app.add_route('/oracle/symbol/{symbol}', oracle.OracleDetailResource())
+app.add_route('/oracle/requests', oracle.OracleRequestListResource())
+app.add_route('/oracle/era_requests', oracle.OracleEraRequests())
+app.add_route('/oracle/pre_check_tasks', oracle.OraclePreCheckTaskListResource())
+app.add_route('/oracle/ares/author/{key}/{auth}', oracle.OracleAresAuthorityResource())
+app.add_route('/oracle/reward', oracle.OracleRequestsReward())
+app.add_route('/estimate/statistics/{symbol}/{id}', estimates.StatisticsEstimate())
+
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())
 app.add_route('/block-total', polkascan.BlockTotalListResource())

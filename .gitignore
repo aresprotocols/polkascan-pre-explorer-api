@@ -23,6 +23,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.private.*
 MANIFEST
 
 # PyInstaller
@@ -82,7 +83,7 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.env
+private.env
 .venv
 env/
 venv/
