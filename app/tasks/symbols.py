@@ -48,7 +48,8 @@ class SymbolsPriceTask(BaseTask):
                 order_by(SymbolSnapshot.block_id.desc()).limit(2).all()
             if len(symbol_prices) == 0:
                 continue
-            auths = [ss58_encode(auth.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE) for auth in symbol_prices[0][4]]
+            # Add block height to auth attribute.
+            auths = [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in symbol_prices[0][4]]
             if symbol_prices:
                 if len(symbol_prices) > 1:
                     results.append({

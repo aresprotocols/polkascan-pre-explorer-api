@@ -46,8 +46,13 @@ class OracleDetailResource(JSONAPIDetailResource):
             'name': 'Price',
             'type': 'line',
             'data': [
-                # TODO fix price
-                [price.block_id, price.price]
+                [
+                    price.block_id,
+                    price.price,
+                    price.fraction,
+                    price.created_at.timestamp(),
+                    [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in price.auth]
+                ]
                 for price in symbol_prices
             ]
         }
