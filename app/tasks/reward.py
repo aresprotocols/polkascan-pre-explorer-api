@@ -16,7 +16,10 @@ class RequestRewardTask(BaseTask):
         self.substrate = create_substrate()
 
     def after(self):
+        # print("RUN 3")
         self.substrate.close()
+        self.session.close()
+        self.session = None
         self.substrate = None
 
     def post(self):
@@ -24,7 +27,7 @@ class RequestRewardTask(BaseTask):
         block_hash = substrate.get_chain_finalised_head()
 
         storage_key_prefix = substrate.generate_storage_hash(storage_module="OracleFinance",
-                                                             storage_function="RewardEra")  # 未领取
+                                                             storage_function="RewardEra")
 
         rpc_result = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
 
