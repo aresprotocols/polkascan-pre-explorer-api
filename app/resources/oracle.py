@@ -3,7 +3,7 @@ from sqlalchemy.orm import load_only
 from substrateinterface import SubstrateInterface
 
 from app import utils
-from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest
+from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest, ValidatorAuditFromChain
 from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate, JSONAPIResource
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 from app.utils.ss58 import ss58_encode
@@ -85,7 +85,32 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
         substrate.init_runtime(block_hash=block_hash)
         # tasks = utils.query_storage(pallet_name='AresOracle', storage_name='PreCheckTaskList',
         #                             substrate=substrate, block_hash=block_hash)
+
+        # id = sa.Column(sa.Integer(), primary_key=True)
+        # validator = sa.Column(sa.String(100), nullable=False)
+        # ares_authority = sa.Column(sa.String(100), nullable=False)
+        # block_number = sa.Column(sa.Integer(), nullable=False)
+        # status = sa.Column(sa.String(20), nullable=False)
+
+        # Get db data
+        validatorAuditDbList: [ValidatorAuditFromChain] = ValidatorAuditFromChain.query(
+            self.session
+        ).order_by(
+            ValidatorAuditFromChain.block_number.desc()
+        ).limit(1000)[:1000]
+
         result = []
+
+        for validatorAuditObj in validatorAuditDbList:
+            obj = {
+                "validator": validatorAuditObj.validator,
+                "ares_authority": validatorAuditObj.ares_authority,
+                "block_number": validatorAuditObj.block_number,
+                "status": validatorAuditObj.status
+            }
+            result.append(obj)
+
+
         all_final_results = utils.query_all_storage(pallet_name='AresOracle', storage_name='FinalPerCheckResult',
                                                     substrate=substrate, block_hash=block_hash)
         for key in all_final_results:
@@ -96,19 +121,19 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
                 "block_number": task_result[0],
                 "status": task_result[1]
             }
-            result.append(obj)
-        # print("==========")
-        # if tasks is not None:
-        #     for (validator, ares_authority, block_number) in tasks.value:
-        #         obj = {
-        #             "validator": ss58_encode(validator.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-        #             "ares_authority": ares_authority,
-        #             "block_number": block_number,
-        #             "status": None
-        #         }
-        #         if validator in all_final_results:
-        #             obj['status'] = all_final_results[validator].value[1]
-        #         result.append(obj)
+
+            is_found = False
+            for idx, val in enumerate(result):
+                if val['validator'] == obj['validator'] and val['ares_authority'] == obj['ares_authority'] :
+                    # update new data
+                    is_found = True
+                    result[idx]["block_number"] = obj['block_number']
+                    result[idx]["status"] = obj['status']
+
+            if not is_found:
+                # To add new
+                result.append(obj)
+
         return result
 
     def process_get_response(self, req, resp, **kwargs):

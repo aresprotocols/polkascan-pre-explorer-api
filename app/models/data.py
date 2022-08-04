@@ -19,7 +19,7 @@
 #  data.py
 
 import sqlalchemy as sa
-from sqlalchemy import text
+from sqlalchemy import text, UniqueConstraint
 from sqlalchemy.orm import relationship, column_property
 from sqlalchemy.dialects.mysql import LONGTEXT
 
@@ -826,6 +826,18 @@ class EraPriceRequest(BaseModel):
 
     def serialize_id(self):
         return self.era
+
+class ValidatorAuditFromChain(BaseModel):
+    __tablename__ = 'data_validator_audit_from_chain'
+    id = sa.Column(sa.Integer(), primary_key=True)
+    validator = sa.Column(sa.String(100), nullable=False)
+    ares_authority = sa.Column(sa.String(100), nullable=False)
+    block_number = sa.Column(sa.Integer(), nullable=False)
+    status = sa.Column(sa.String(20), nullable=False)
+    __table_args__ = (UniqueConstraint('validator', 'ares_authority', name='unqiue_validator_ares_authority'),)
+
+    def serialize_id(self):
+        return self.validator
 
 
 class PriceRequest(BaseModel):
