@@ -53,13 +53,13 @@ class ChainDataTask(BaseTask):
         else:
             total_validators = len(total_validators.value)
 
-        current_era = utils.query_storage(pallet_name='Staking', storage_name='CurrentEra',
+        active_era = utils.query_storage(pallet_name='Staking', storage_name='activeEra',
                                           substrate=substrate,
                                           block_hash=block_hash)
         total_stake = None
         if total_validators is not None:
             total_stake = utils.query_storage(pallet_name='Staking', storage_name='ErasTotalStake',
-                                              substrate=substrate, block_hash=block_hash, params=[current_era.value])
+                                              substrate=substrate, block_hash=block_hash, params=[active_era.value])
 
         if total_stake is not None:
             total_stake = total_stake.value
@@ -78,7 +78,7 @@ class ChainDataTask(BaseTask):
         min_inflation = 0.025
         stake_target = 0.5
 
-        staked_fraction = 0 if total_issuance == 0 or total_issuance == 0 else total_stake / total_issuance
+        staked_fraction = 0 if total_issuance == 0 or total_issuance == 0 else total_stake * 1000000 / total_issuance / 1000000
         # staked_Fraction = total_issuance == 0 || totalIssuance.isZero()? 0 : totalStaked.mul(BN_MILLION).div(totalIssuance).toNumber() / BN_MILLION.toNumber();
         ideal_stake = stake_target - (min(auction_max, num_auctions) * auction_adjust)
         ideal_interest = max_inflation / ideal_stake
@@ -120,6 +120,7 @@ class ChainDataTask(BaseTask):
             'total_stake': str(total_stake),
             'inflation': inflation,
             'total_symbols': len(symbols),
-            'total_price_requests': total_price_requests
+            'total_price_requests': total_price_requests,
+            # 'remaining_rewards_of_purchase': 0 # not need.
         }
         self.cache_region().set("ares_chain_data", resp)
