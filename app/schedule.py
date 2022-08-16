@@ -44,9 +44,9 @@ if __name__ == '__main__':
     chain_data.run()
     scheduler.add_job(
         ares_chart.run,
-        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="50", second="0"),
+        trigger=CronTrigger(year="*", month="*", day="*", hour="*/6", minute="50", second="0"),
         # args=[],
-        name="ares_chart2",
+        name="ares_chart",
     )
     time.sleep(1)
     scheduler.add_job(
