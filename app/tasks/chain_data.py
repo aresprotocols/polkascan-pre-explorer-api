@@ -57,11 +57,12 @@ class ChainDataTask(BaseTask):
                                           substrate=substrate,
                                           block_hash=block_hash)
 
-        print("KAMI-DEBUG, active_era = ", active_era.value)
+        print("KAMI-DEBUG, active_era.value['index'] = ", active_era.value['index'])
         total_stake = None
         if total_validators is not None:
             total_stake = utils.query_storage(pallet_name='Staking', storage_name='ErasTotalStake',
-                                              substrate=substrate, block_hash=block_hash, params=[active_era.value])
+                                              substrate=substrate, block_hash=block_hash,
+                                              params=[active_era.value['index']])
 
         if total_stake is not None:
             total_stake = total_stake.value
