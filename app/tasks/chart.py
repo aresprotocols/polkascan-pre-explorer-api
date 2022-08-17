@@ -148,7 +148,10 @@ class AresChartTask(BaseTask):
 
             # blocktime_avg
             _data = charts[1]['attributes']['data']['series'][0]['data']
-            _data.append([time, int(max_total_blocktime - min_total_blocktime) / int((blocks['max'] - blocks['min']))])
+            _div_num = int((blocks['max'] - blocks['min']))
+            if _div_num > 0:
+                _data.append(
+                    [time, int(max_total_blocktime - min_total_blocktime) / int((blocks['max'] - blocks['min']))])
 
             # extrinsics_signed
             _data = charts[2]['attributes']['data']['series'][0]['data']

@@ -33,7 +33,8 @@ class BaseTask:
             self.before()
             self.post()
         except Exception as e:
-            logging.error(e)
+            # e.__traceback__
+            logging.error(e.__traceback__.print_stack())
         finally:
             logging.info("job done")
             self.after()

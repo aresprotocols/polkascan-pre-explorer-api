@@ -13,6 +13,7 @@ class SymbolListResource(JSONAPIListResource):
     cache_expiration_time = 0
 
     def get_query(self):
+        print("KAMI-DEBUG ares_symbols ")
         return self.cache_region.get("ares_symbols")
 
 
