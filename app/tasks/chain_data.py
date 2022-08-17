@@ -53,9 +53,11 @@ class ChainDataTask(BaseTask):
         else:
             total_validators = len(total_validators.value)
 
-        active_era = utils.query_storage(pallet_name='Staking', storage_name='activeEra',
+        active_era = utils.query_storage(pallet_name='Staking', storage_name='ActiveEra',
                                           substrate=substrate,
                                           block_hash=block_hash)
+
+        print("KAMI-DEBUG, active_era = ", active_era.value)
         total_stake = None
         if total_validators is not None:
             total_stake = utils.query_storage(pallet_name='Staking', storage_name='ErasTotalStake',
