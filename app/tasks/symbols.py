@@ -48,8 +48,15 @@ class SymbolsPriceTask(BaseTask):
                 order_by(SymbolSnapshot.block_id.desc()).limit(2).all()
             if len(symbol_prices) == 0:
                 continue
+
+            print('KAMI DEBUG - symbol_prices[0][4]] = ', symbol_prices[0][4])
+
             # Add block height to auth attribute.
-            auths = [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in symbol_prices[0][4]]
+            auths = [[ss58_encode(auth_items[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth_items[1]]
+                     if isinstance(auth_items, list) else [ss58_encode(auth_items.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), 0]
+                     for auth_items in symbol_prices[0][4]]
+
+            # auths = [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in symbol_prices[0][4]]
             if symbol_prices:
                 if len(symbol_prices) > 1:
                     results.append({
