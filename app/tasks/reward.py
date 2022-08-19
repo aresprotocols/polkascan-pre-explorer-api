@@ -68,7 +68,7 @@ class RequestRewardTask(BaseTask):
         param_hashers = storage_func.get_param_hashers()
         value_type = storage_func.get_value_type_string()
 
-        results = []
+        results = {}
         total_reward = 0
         for era in eras:
             era_total_points = eras[era]['total_points']
@@ -95,11 +95,42 @@ class RequestRewardTask(BaseTask):
             for account in eras[era]:
                 if 'total_points' == account: continue
 
-                results.append({
-                    'era': era,
-                    'account': scalecodec.ss58_encode(account.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE),
-                    'reward': eras[era][account] / era_total_points * era_total_reward,
-                })
+                account_address = scalecodec.ss58_encode(account.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
+                account_reward = eras[era][account] / era_total_points * era_total_reward
 
-        results.sort(key=lambda r: (r['era'], r['account']))
-        self.cache_region().set("ares_request_reward", {"total_reward": total_reward, "data": results})
+                if not results.get(account_address):
+                    results[account_address] = {
+                        'total_reward': 0,
+                        'sub_data': []
+                    }
+                    results[account_address]['address'] = account_address
+                    results[account_address]['total_reward'] = account_reward
+                    results[account_address]['sub_data'] = []
+                    results[account_address]['sub_data'].append({
+                        'era': era,
+                        'account': account_address,
+                        'reward': account_reward,
+                    })
+                else:
+                    results[account_address]['total_reward'] += account_reward
+                    results[account_address]['sub_data'].append({
+                        'era': era,
+                        'account': account_address,
+                        'reward': account_reward,
+                    })
+
+                # results.append({
+                #     'era': era,
+                #     'account': account_address,
+                #     'reward': account_reward,
+                # })
+
+        # auths = [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in symbol_prices[0][4]]
+        # Result dist to list
+        data_arr = []
+        for _res_key, res_value in results.items():
+            data_arr.append(res_value)
+
+        # results.sort(key=lambda r: (r['era'], r['account']))
+        self.cache_region().set("ares_request_reward", {"total_reward": total_reward, "data": data_arr})
+        # self.cache_region().set(data_arr)

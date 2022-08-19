@@ -158,6 +158,26 @@ class JSONAPIListResource(JSONAPIResource, ABC):
         }
 
 
+def make_response(resource, item, req):
+    if not item:
+        response = {
+            'status': falcon.HTTP_404,
+            'media': None,
+            'cacheable': False
+        }
+    else:
+        response = {
+            'status': falcon.HTTP_200,
+            'media': resource.get_jsonapi_response(
+                data=resource.serialize_item(item),
+                relationships=resource.get_relationships(req.params.get('include', []), item),
+                meta=resource.get_meta()
+            ),
+            'cacheable': True
+        }
+    return response
+
+
 class JSONAPIDetailResource(JSONAPIResource, ABC):
     cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_detail_cache_expiration_time']
 
@@ -173,27 +193,28 @@ class JSONAPIDetailResource(JSONAPIResource, ABC):
 
     def process_get_response(self, req, resp, **kwargs):
         item = self.get_item(kwargs.get(self.get_item_url_name()))
+        return make_response(self, item, req)
 
-        if not item:
-            response = {
-                'status': falcon.HTTP_404,
-                'media': None,
-                'cacheable': False
-            }
 
-        else:
+class JSONAPIDetailResourceFilterWithDb(JSONAPIResource, ABC):
+    cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_detail_cache_expiration_time']
 
-            response = {
-                'status': falcon.HTTP_200,
-                'media': self.get_jsonapi_response(
-                    data=self.serialize_item(item),
-                    relationships=self.get_relationships(req.params.get('include', []), item),
-                    meta=self.get_meta()
-                ),
-                'cacheable': True
-            }
+    def get_item_url_name(self):
+        return 'item_id'
 
-        return response
+    @abstractmethod
+    def get_item(self, item_id, offset, size_num):
+        raise NotImplementedError()
+
+    def get_relationships(self, include_list, item):
+        return {}
+
+    def process_get_response(self, req, resp, **kwargs):
+        params = req.params
+        start_num = max(int(params.get('page[number]', 1)) - 1, 0)
+        size_num = min(int(params.get('page[size]', 25)), MAX_RESOURCE_PAGE_SIZE)
+        item = self.get_item(kwargs.get(self.get_item_url_name()), start_num * size_num, size_num)
+        return make_response(self, item, req)
 
 
 class AresSubstrateInterface(SubstrateInterface):
@@ -207,6 +228,7 @@ class AresSubstrateInterface(SubstrateInterface):
 
 
 def create_substrate() -> SubstrateInterface:
-    a = AresSubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY,cache_region=None)
+    a = AresSubstrateInterface(url=settings.SUBSTRATE_RPC_URL, type_registry_preset=settings.TYPE_REGISTRY,
+                               cache_region=None)
     a.metadata_cache = resources.metadata_store
     return a

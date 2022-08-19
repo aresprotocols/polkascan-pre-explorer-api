@@ -4,7 +4,8 @@ from substrateinterface import SubstrateInterface
 
 from app import utils
 from app.models.data import SymbolSnapshot, PriceRequest, EraPriceRequest, ValidatorAuditFromChain
-from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate, JSONAPIResource
+from app.resources.base import JSONAPIDetailResource, JSONAPIListResource, create_substrate, JSONAPIResource, \
+    JSONAPIDetailResourceFilterWithDb
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 from app.utils.ss58 import ss58_encode
 
@@ -34,15 +35,16 @@ class OracleEraRequests(JSONAPIListResource):
         return era_price_requests
 
 
-class OracleDetailResource(JSONAPIDetailResource):
+class OracleDetailResource(JSONAPIDetailResourceFilterWithDb):
     cache_expiration_time = 0
 
     def get_item_url_name(self):
         return 'symbol'
 
-    def get_item(self, item_id):
+    def get_item(self, item_id, offset, size_num):
         symbol_prices: [SymbolSnapshot] = SymbolSnapshot.query(self.session).filter_by(
-            symbol=item_id).order_by(SymbolSnapshot.block_id.desc()).limit(1000)[:1000]
+            symbol=item_id).order_by(SymbolSnapshot.block_id.desc()).offset(offset).limit(size_num)[:size_num]
+
         data = {
             'name': 'Price',
             'type': 'line',
@@ -52,7 +54,8 @@ class OracleDetailResource(JSONAPIDetailResource):
                     price.price,
                     price.fraction,
                     price.created_at.timestamp(),
-                    [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in price.auth]
+                    [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] if isinstance(auth, list)
+                     else [ss58_encode(auth.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), 0] for auth in price.auth]
                 ]
                 for price in symbol_prices
             ]
@@ -60,11 +63,16 @@ class OracleDetailResource(JSONAPIDetailResource):
         return data
 
 
-class OracleRequestsReward(JSONAPIDetailResource):
+class OracleRequestsReward(JSONAPIListResource):
     cache_expiration_time = 0
 
-    def get_item(self, item_id):
-        return self.cache_region.get("ares_request_reward")
+    def get_meta(self):
+        ares_request_reward = self.cache_region.get("ares_request_reward")
+        return {'total_reward': ares_request_reward['total_reward']}
+
+    def get_query(self):
+        ares_request_reward = self.cache_region.get("ares_request_reward")
+        return ares_request_reward['data']
 
 
 class OraclePreCheckTaskListResource(JSONAPIListResource):
