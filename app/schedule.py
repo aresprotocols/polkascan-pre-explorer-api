@@ -44,28 +44,28 @@ if __name__ == '__main__':
     chain_data.run()
     scheduler.add_job(
         ares_chart.run,
-        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="50", second="0"),
+        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="2", second="0"),
         # args=[],
         name="ares_chart2",
     )
     time.sleep(1)
     scheduler.add_job(
         request_reward.run,
-        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="10", second="0"),
+        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="2", second="0"),
         # args=[],
         name="reqeust_reward",
     )
     time.sleep(1)
     scheduler.add_job(
         symbols_price.run,
-        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="15", second="0"),
+        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="2", second="0"),
         # args=[],
         name="symbols price",
     )
     time.sleep(1)
     scheduler.add_job(
         chain_data.run,
-        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="30", second="0"),
+        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="2", second="0"),
         # args=[],
         name="chain data",
     )
