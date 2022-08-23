@@ -9,16 +9,30 @@ from app.main import session_factory
 from app.models.data import BlockTotal, Block, PriceRequest
 from app.resources.base import create_substrate
 from app.tasks.base import BaseTask
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, Session, sessionmaker
 
 
 class ChainDataTask(BaseTask):
     session: 'Session'
     substrate: 'SubstrateInterface'
 
+    def __init__(self, db_setting, is_debug=False):
+        self.db_setting = db_setting
+        self.is_debug = is_debug
+
     def before(self):
-        _scoped_session = scoped_session(session_factory)
-        self.session = _scoped_session()
+        print("Schedule call - ChainDataTask BEFORE")
+        engine = create_engine(self.db_setting, echo=self.is_debug, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
+        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+        self.session = scoped_session(session_factory)
         self.substrate = create_substrate()
+
+    # def before(self):
+    #     print("Schedule call - ChainDataTask BEFORE")
+    #     _scoped_session = scoped_session(session_factory)
+    #     self.session = _scoped_session()
+    #     self.substrate = create_substrate()
 
     def after(self):
         self.substrate.close()
@@ -27,6 +41,7 @@ class ChainDataTask(BaseTask):
         self.session = None
 
     def post(self):
+        print("Schedule call - ChainDataTask POST")
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
         block: Block = Block.query(self.session).filter_by(id=block_total.id).first()

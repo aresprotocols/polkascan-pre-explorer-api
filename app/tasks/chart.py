@@ -2,7 +2,8 @@ import datetime
 
 import sqlalchemy
 from dogpile.cache import CacheRegion
-from sqlalchemy.orm import scoped_session, Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, Session, sessionmaker
 
 from app.main import session_factory
 from app.models.data import BlockTotal
@@ -11,16 +12,29 @@ from app.tasks.base import BaseTask
 
 class AresChartTask(BaseTask):
     session: 'Session'
+    db_setting = ''
+    is_debug = False
+
+    def __init__(self, db_setting, is_debug=False):
+        # print('AresChartTask.__init__', db_setting)
+        self.db_setting = db_setting
+        self.is_debug = is_debug
 
     def before(self):
-        _scoped_session = scoped_session(session_factory)
-        self.session = _scoped_session()
+        print("Schedule call - AresChartTask BEFORE")
+        # _scoped_session = scoped_session(session_factory)
+        # self.session = _scoped_session()
+        # print('=============='.format(), self.db_setting, self.is_debug)
+        engine = create_engine(self.db_setting, echo=self.is_debug, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
+        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+        self.session = scoped_session(session_factory)
 
     def after(self):
         self.session.close()
         self.session = None
 
     def post(self):
+        print("Schedule call - AresChartTask POST")
         limit = 14
         time_format = "%Y%m%d"
         yesterday = datetime.datetime.today() - datetime.timedelta(days=1)  # current date and time

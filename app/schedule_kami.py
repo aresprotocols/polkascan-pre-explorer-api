@@ -12,6 +12,11 @@ def testTask():
     time_of_shanghai = datetime.now(zone_of_shanghai)
     print(" Hello ", time_of_shanghai.strftime("%Y-%m-%d %H:%M:%S"))
 
+def testTask2():
+    zone_of_shanghai = pytz.timezone("Asia/Shanghai")
+    time_of_shanghai = datetime.now(zone_of_shanghai)
+    print(" World ", time_of_shanghai.strftime("%Y-%m-%d %H:%M:%S"))
+
 
 if __name__ == '__main__':
     jobstores = {
@@ -28,9 +33,17 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults, timezone='UTC')
     scheduler.start()
 
-    print('add job')
+    print('add job with interval')
     scheduler.add_job(testTask, 'interval', minutes=1, id='my_job_id')
     print('done')
+
+    print('add job with Trigger')
+    scheduler.add_job(
+        testTask2,
+        trigger=CronTrigger(year="*", month="*", day="*", hour="*", minute="*/2", second="0"),
+        # args=[],
+        name="my_job_2",
+    )
 
     while True:
         time.sleep(120)

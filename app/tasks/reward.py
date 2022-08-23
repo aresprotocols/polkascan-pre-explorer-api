@@ -13,6 +13,7 @@ class RequestRewardTask(BaseTask):
     substrate: 'SubstrateInterface'
 
     def before(self):
+        print("Schedule call - RequestRewardTask BEFORE")
         self.substrate = create_substrate()
 
     def after(self):
@@ -20,6 +21,7 @@ class RequestRewardTask(BaseTask):
         self.substrate = None
 
     def post(self):
+        print("Schedule call - RequestRewardTask POST")
         substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
 
@@ -51,7 +53,7 @@ class RequestRewardTask(BaseTask):
                                                                          storage_function="AskEraPoint",
                                                                          params=[era_key],
                                                                          hashers=["Blake2_128Concat"])
-                    print(f"request AskEraPoint {storage_key_prefix} {block_hash}")
+                    # print(f"request AskEraPoint {storage_key_prefix} {block_hash}")
                     keys = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
                     points = substrate.rpc_request("state_queryStorageAt", [keys, block_hash]).get("result")
                     total_points = 0

@@ -4,33 +4,44 @@ from sqlalchemy.orm import scoped_session, Session, load_only
 from substrateinterface import SubstrateInterface
 
 from app import utils
-from app.main import session_factory
 from app.models.data import SymbolSnapshot, Block
 from app.resources.base import create_substrate
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 from app.tasks.base import BaseTask
 from app.utils.ss58 import ss58_encode
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, Session, sessionmaker
 
 
 class SymbolsPriceTask(BaseTask):
     substrate: 'SubstrateInterface'
     session: 'Session'
 
+    def __init__(self, db_setting, is_debug=False):
+        self.db_setting = db_setting
+        self.is_debug = is_debug
+
     def before(self):
-        # print("RUN 1")
+        print("Schedule call - SymbolsPriceTask BEFORE")
+        engine = create_engine(self.db_setting, echo=self.is_debug, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
+        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+        self.session = scoped_session(session_factory)
         self.substrate = create_substrate()
-        _scoped_session = scoped_session(session_factory)
-        self.session = _scoped_session()
+
+    # def before(self):
+    #     # print("RUN 1")
+    #     self.substrate = create_substrate()
+    #     _scoped_session = scoped_session(session_factory)
+    #     self.session = _scoped_session()
 
     def after(self):
-        # print("RUN 3")
         self.substrate.close()
         self.session.close()
         self.session = None
         self.substrate = None
 
     def post(self):
-        # print("RUN 2")
+        print("Schedule call - SymbolsPriceTask POST")
         substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
         substrate.init_runtime(block_hash=block_hash)
