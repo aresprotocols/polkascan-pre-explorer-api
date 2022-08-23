@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 if __name__ == '__main__':
     jobstores = {'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')}
-    executors = {'default': ThreadPoolExecutor(20), 'processpool': ProcessPoolExecutor(5)}
-    job_defaults = {'coalesce': False, 'max_instances': 5}
+    executors = {'default': ThreadPoolExecutor(20), 'processpool': ProcessPoolExecutor(10)}
+    job_defaults = {'coalesce': False, 'max_instances': 10}
 
     scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults)
     scheduler.start()
