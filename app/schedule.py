@@ -56,13 +56,13 @@ if __name__ == '__main__':
     print("############## add schedule tasks.")
 
     time.sleep(2)
-    scheduler.add_job(ares_chart.run, 'interval', minutes=2, id='ares_chart')
+    scheduler.add_job(ares_chart.run, 'interval', minutes=60, id='ares_chart')
     time.sleep(2)
-    scheduler.add_job(request_reward.run, 'interval', minutes=2, id='request_reward')
+    scheduler.add_job(request_reward.run, 'interval', minutes=10, id='request_reward')
     time.sleep(2)
-    scheduler.add_job(symbols_price.run, 'interval', minutes=2, id='symbols_price')
+    scheduler.add_job(symbols_price.run, 'interval', minutes=10, id='symbols_price')
     time.sleep(2)
-    scheduler.add_job(chain_data.run, 'interval', minutes=2, id='chain_data')
+    scheduler.add_job(chain_data.run, 'interval', minutes=30, id='chain_data')
     time.sleep(2)
 
     # scheduler.add_job(
