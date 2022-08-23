@@ -73,7 +73,5 @@ if __name__ == '__main__':
     substrate.subscribe_block_headers(subscription_handler=subscription_handler, finalized_only=True,
                                       include_author=False)
 
-
-
-    # while True:
-    #     time.sleep(120)
+    while True:
+        time.sleep(120)
