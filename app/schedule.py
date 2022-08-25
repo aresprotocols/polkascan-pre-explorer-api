@@ -23,12 +23,12 @@ if __name__ == '__main__':
 
     scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors, job_defaults=job_defaults)
     scheduler.start()
+
     ares_chart = AresChartTask(DB_CONNECTION, DEBUG)
     request_reward = RequestRewardTask()
     symbols_price = SymbolsPriceTask(DB_CONNECTION, DEBUG)
     chain_data = ChainDataTask(DB_CONNECTION, DEBUG)
     substrate = create_substrate()
-
 
     def subscription_handler(new_block, update_nr, subscription_id):
         events = substrate.get_events(block_hash=new_block['header']['parentHash'])

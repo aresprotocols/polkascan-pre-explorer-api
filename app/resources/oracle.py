@@ -78,9 +78,14 @@ class OracleRequestsReward(JSONAPIListResource):
 class OraclePreCheckTaskListResource(JSONAPIListResource):
     cache_expiration_time = 300
     substrate: SubstrateInterface = None
+    audit_list = []
 
     def __init__(self, substrate: SubstrateInterface = None):
         self.substrate = substrate
+
+    def get_meta(self):
+        # ares_request_reward = self.cache_region.get("ares_request_reward")
+        return {'total_audit_count': len(self.audit_list)}
 
     def get_query(self):
         if self.substrate is None:
@@ -106,9 +111,9 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
             self.session
         ).order_by(
             ValidatorAuditFromChain.block_number.desc()
-        ).limit(1000)[:1000]
+        ).limit(5000)[:5000]
 
-        result = []
+        self.audit_list = []
 
         for validatorAuditObj in validatorAuditDbList:
             obj = {
@@ -117,7 +122,7 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
                 "block_number": validatorAuditObj.block_number,
                 "status": validatorAuditObj.status
             }
-            result.append(obj)
+            self.audit_list.append(obj)
 
 
         all_final_results = utils.query_all_storage(pallet_name='AresOracle', storage_name='FinalPerCheckResult',
@@ -132,18 +137,18 @@ class OraclePreCheckTaskListResource(JSONAPIListResource):
             }
 
             is_found = False
-            for idx, val in enumerate(result):
+            for idx, val in enumerate(self.audit_list):
                 if val['validator'] == obj['validator'] and val['ares_authority'] == obj['ares_authority'] :
                     # update new data
                     is_found = True
-                    result[idx]["block_number"] = obj['block_number']
-                    result[idx]["status"] = obj['status']
+                    self.audit_list[idx]["block_number"] = obj['block_number']
+                    self.audit_list[idx]["status"] = obj['status']
 
             if not is_found:
                 # To add new
-                result.append(obj)
+                self.audit_list.append(obj)
 
-        return result
+        return self.audit_list
 
     def process_get_response(self, req, resp, **kwargs):
         if self.substrate:
