@@ -12,6 +12,8 @@ from app.utils.ss58 import ss58_encode
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, Session, sessionmaker
 
+from app.utils.storage import getChainDataValue
+
 
 class SymbolsPriceTask(BaseTask):
     substrate: 'SubstrateInterface'
@@ -51,7 +53,7 @@ class SymbolsPriceTask(BaseTask):
                                       block_hash=block_hash)
         results = []
         for symbol in symbols:
-            key = symbol.value[0]
+            key = getChainDataValue(symbol)[0]
             symbol_prices: [] = self.session.query(SymbolSnapshot.symbol, SymbolSnapshot.price, SymbolSnapshot.block_id,
                                                    Block.datetime, SymbolSnapshot.auth). \
                 join(Block, Block.id == SymbolSnapshot.block_id). \
@@ -72,7 +74,7 @@ class SymbolsPriceTask(BaseTask):
                 if len(symbol_prices) > 1:
                     results.append({
                         "symbol": key,
-                        "precision": symbol.value[3],
+                        "precision": getChainDataValue(symbol)[3],
                         "interval": (symbol_prices[0][3] - symbol_prices[1][3]).total_seconds(),
                         "price": symbol_prices[0][1],
                         "block_id": symbol_prices[0][2],
@@ -82,7 +84,7 @@ class SymbolsPriceTask(BaseTask):
                 else:
                     results.append({
                         "symbol": key,
-                        "precision": symbol.value[3],
+                        "precision": getChainDataValue(symbol)[3],
                         "interval": None,
                         "price": symbol_prices[0][1],
                         "block_id": symbol_prices[0][2],

@@ -12,6 +12,8 @@ from app.tasks.base import BaseTask
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, Session, sessionmaker
 
+from app.utils.storage import getChainDataValue
+
 
 class ChainDataTask(BaseTask):
     session: 'Session'
@@ -44,6 +46,7 @@ class ChainDataTask(BaseTask):
         print("Schedule call - ChainDataTask POST")
         block_total: BlockTotal = BlockTotal.query(self.session).filter_by(
             id=self.session.query(func.max(BlockTotal.id)).one()[0]).first()
+
         block: Block = Block.query(self.session).filter_by(id=block_total.id).first()
         block_hash = block.hash
         substrate = self.substrate
@@ -58,7 +61,7 @@ class ChainDataTask(BaseTask):
         if total_issuance is None:
             total_issuance = 0
         else:
-            total_issuance = total_issuance.value
+            total_issuance = getChainDataValue(total_issuance)
 
         total_validators = utils.query_storage(pallet_name='Session', storage_name='Validators',
                                                substrate=substrate,
@@ -66,21 +69,21 @@ class ChainDataTask(BaseTask):
         if total_validators is None:
             total_validators = 0
         else:
-            total_validators = len(total_validators.value)
+            total_validators = len(getChainDataValue(total_validators))
 
         active_era = utils.query_storage(pallet_name='Staking', storage_name='ActiveEra',
                                           substrate=substrate,
                                           block_hash=block_hash)
 
-        print("KAMI-DEBUG, active_era.value['index'] = ", active_era.value['index'])
+        print("KAMI-DEBUG, active_era.value['index'] = ", getChainDataValue(active_era)['index'])
         total_stake = None
         if total_validators is not None:
             total_stake = utils.query_storage(pallet_name='Staking', storage_name='ErasTotalStake',
                                               substrate=substrate, block_hash=block_hash,
-                                              params=[active_era.value['index']])
+                                              params=[getChainDataValue(active_era)['index']])
 
         if total_stake is not None:
-            total_stake = total_stake.value
+            total_stake = getChainDataValue(total_stake)
         else:
             total_stake = 0
 

@@ -16,20 +16,20 @@ if __name__ == '__main__':
     symbols_price = SymbolsPriceTask(DB_CONNECTION, DEBUG)
     chain_data = ChainDataTask(DB_CONNECTION, DEBUG)
 
-    print("RUN ares_chart")
-    ares_chart.run()
-    time.sleep(5)
+    # print("RUN ares_chart")
+    # ares_chart.run()
+    # time.sleep(5)
 
     print("RUN request_reward")
     request_reward.run()
     time.sleep(5)
 
-    print("RUN symbols_price")
-    symbols_price.run()
-    time.sleep(5)
-
-    print("RUN chain_data")
-    chain_data.run()
-    time.sleep(5)
+    # print("RUN symbols_price")
+    # symbols_price.run()
+    # time.sleep(5)
+    #
+    # print("RUN chain_data")
+    # chain_data.run()
+    # time.sleep(5)
 
     print("Refresh done.")

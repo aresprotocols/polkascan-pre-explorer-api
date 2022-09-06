@@ -7,6 +7,7 @@ from app import utils
 from app.resources.base import create_substrate
 from app.settings import SUBSTRATE_ADDRESS_TYPE
 from app.tasks.base import BaseTask
+from app.utils.storage import getChainDataValue
 
 
 class RequestRewardTask(BaseTask):
@@ -37,14 +38,18 @@ class RequestRewardTask(BaseTask):
             account = "0x{}".format(account)
             rewards = utils.query_storage(pallet_name="OracleFinance", storage_name="RewardEra",
                                           substrate=substrate, block_hash=block_hash, params=[account])
+
+            # print("rewards === ", rewards[0], type(rewards[0]))
             for reward in rewards:
                 era = str(reward[0])
                 if era in eras:
                     era_reward = eras[era]
                     if account in era_reward:
-                        era_reward[account] += reward[1].value
+                        # print("era_reward[account] == ", account, era_reward[account])
+                        # print("reward[1].value == ", reward[1].value)
+                        era_reward[account] += getChainDataValue(reward[1])
                     else:
-                        era_reward[account] = reward[1].value
+                        era_reward[account] = getChainDataValue(reward[1])
                 else:
                     # TODO remove hardcode type_string & hashers
                     era_key = substrate.runtime_config.create_scale_object(type_string="U32")
@@ -56,13 +61,19 @@ class RequestRewardTask(BaseTask):
                     # print(f"request AskEraPoint {storage_key_prefix} {block_hash}")
                     keys = substrate.rpc_request("state_getKeys", [storage_key_prefix, block_hash]).get("result")
                     points = substrate.rpc_request("state_queryStorageAt", [keys, block_hash]).get("result")
+                    # print("kami - debug key and poit ", keys, points)
                     total_points = 0
                     for point in points[0]['changes']:
                         item_value = substrate.runtime_config.create_scale_object(type_string='U32',
                                                                                   data=ScaleBytes(point[1]))
                         item_value.decode()
-                        total_points += item_value.value
-                    eras[era] = {account: reward[1].value, 'total_points': total_points}
+                        # print("total_points = ", total_points, type(total_points))
+                        # print("getChainDataValue(item_value) = ", getChainDataValue(item_value), type(getChainDataValue(item_value)))
+                        total_points += getChainDataValue(item_value)
+                        # print("total_points = ", total_points)
+
+                    # print('debug.reward -- ', reward[1], type(reward[1]))
+                    eras[era] = {account: getChainDataValue(reward[1]), 'total_points': total_points}
 
         module: GenericPalletMetadata = substrate.metadata_decoder.get_metadata_pallet("OracleFinance")
         storage_func: GenericStorageEntryMetadata = module.get_storage_function("AskEraPayment")
@@ -91,7 +102,7 @@ class RequestRewardTask(BaseTask):
                     item_value = substrate.runtime_config.create_scale_object(type_string=value_type,
                                                                               data=ScaleBytes(item[1]))
                     item_value.decode()
-                    era_total_reward += item_value.value
+                    era_total_reward += getChainDataValue(item_value)
 
             total_reward += era_total_reward
             for account in eras[era]:

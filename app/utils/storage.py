@@ -74,3 +74,9 @@ def query_all_storage(pallet_name: str, storage_name: str, substrate: SubstrateI
             item_value.decode()
             result[item_key.value] = item_value
     return result
+
+def getChainDataValue(data) :
+    if isinstance(data, (float, int, str, list, dict, tuple)) :
+        return data
+    else:
+        return data.value
