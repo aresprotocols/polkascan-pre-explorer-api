@@ -52,7 +52,7 @@ class BaseModelObj(DictableModel):
         :param exclude: list of property names to exclude in serialization
         :returns: dict respresentation of current model
         """
-
+        print("DEBUG-0916-B1", self.serialize_type, self.serialize_exclude)
         obj_dict = {
             'type': self.serialize_type,
             'id': self.serialize_id(),

@@ -267,6 +267,8 @@ class ExtrinsicDetailResource(JSONAPIDetailResource):
         return relationships
 
     def check_params(self, params, identifier):
+        print('DEBUG-0916-A', identifier)
+        print('DEBUG-0916-B', params)
         for idx, param in enumerate(params):
 
             if 'value' in param and 'type' in param:
