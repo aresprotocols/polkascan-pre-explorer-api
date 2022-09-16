@@ -270,24 +270,20 @@ class ExtrinsicDetailResource(JSONAPIDetailResource):
         print('DEBUG-0916-A', identifier)
         print('DEBUG-0916-B', params)
         for idx, param in enumerate(params):
-
-            if 'value' in param and 'type' in param:
-
-                if type(param['value']) is list:
-                    param['value'] = self.check_params(param['value'], identifier)
-
-                else:
-                    if param['type'] == 'Box<Call>':
-                        param['value']['call_args'] = self.check_params(param['value']['call_args'], identifier)
-
-                    elif type(param['value']) is str and len(param['value']) > 200000:
-                        param['value'] = "{}/{}".format(
-                            identifier,
-                            blake2b(bytes.fromhex(param['value'].replace('0x', '')), digest_size=32).digest().hex()
-                        )
-                        param["type"] = "DownloadableBytesHash"
-                        param['valueRaw'] = ""
-
+            if isinstance(param, dict):
+                if 'value' in param and 'type' in param:
+                    if type(param['value']) is list:
+                        param['value'] = self.check_params(param['value'], identifier)
+                    else:
+                        if param['type'] == 'Box<Call>':
+                            param['value']['call_args'] = self.check_params(param['value']['call_args'], identifier)
+                        elif type(param['value']) is str and len(param['value']) > 200000:
+                            param['value'] = "{}/{}".format(
+                                identifier,
+                                blake2b(bytes.fromhex(param['value'].replace('0x', '')), digest_size=32).digest().hex()
+                            )
+                            param["type"] = "DownloadableBytesHash"
+                            param['valueRaw'] = ""
         return params
 
     def serialize_item(self, item):
