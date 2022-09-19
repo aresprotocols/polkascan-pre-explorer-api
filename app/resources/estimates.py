@@ -49,18 +49,30 @@ class StatisticsEstimate(JSONAPIResource):
             return [{"index": row[0], "count": row[1]} for row in results]
 
 
-
 class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
     cache_expiration_time = 0
+    item_id = ''
+
+    def get_meta(self):
+        if self.item_id == '':
+            return {'total_deposit': 0}
+        else:
+            results = self.session.query(EstimatesParticipants.ss58_address,
+                                         func.sum(EstimatesParticipants.deposit)). \
+                filter_by(ss58_address=self.item_id). \
+                group_by(EstimatesParticipants.ss58_address).first()
+            return {'total_deposit': str(results[1])}
 
     def get_item_url_name(self):
         return 'ss58'
 
     def get_item(self, item_id, offset, size_num):
         print("item_id", item_id, "offset", item_id, "size_num", size_num)
+        self.item_id = item_id
 
         estimate_list: [EstimatesParticipants] = EstimatesParticipants.query(self.session).filter_by(
-            ss58_address=item_id).order_by(EstimatesParticipants.block_id.desc()).offset(offset).limit(size_num)[:size_num]
+            ss58_address=item_id).order_by(EstimatesParticipants.block_id.desc()).offset(offset).limit(size_num)[
+                                                 :size_num]
 
         # print("###########1")
         # print(estimate_list[1].block_id, estimate_list[1].symbol, estimate_list[1].price)
@@ -76,7 +88,8 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
                     'estimate_type': estimate_item.estimate_type,
                     'participant': estimate_item.participant,
                     'ss58_address': estimate_item.ss58_address,
-                    'price': None if estimate_item.price is None else int(estimate_item.price),
+                    'price': None if estimate_item.price is None else str(estimate_item.price),
+                    'deposit': None if estimate_item.deposit is None else str(estimate_item.deposit),
                     'option_index': estimate_item.option_index,
                     'created_at': str(estimate_item.created_at)
                 }
@@ -88,7 +101,7 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
 
 class EstimatesWinnerList(JSONAPIDetailResourceFilterWithDb):
     cache_expiration_time = 0
-    item_id=''
+    item_id = ''
 
     def get_item_url_name(self):
         return 'ss58'
