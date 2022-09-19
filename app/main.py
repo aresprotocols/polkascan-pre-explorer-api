@@ -70,6 +70,8 @@ app.add_route('/oracle/pre_check_tasks', oracle.OraclePreCheckTaskListResource()
 app.add_route('/oracle/ares/author/{key}/{auth}', oracle.OracleAresAuthorityResource())
 app.add_route('/oracle/reward', oracle.OracleRequestsReward())
 app.add_route('/estimate/statistics/{symbol}/{id}', estimates.StatisticsEstimate())
+app.add_route('/estimate/participate_estimates/{ss58}', estimates.EstimatesParticipantsList())
+app.add_route('/estimate/winner/{ss58}', estimates.EstimatesWinnerList())
 
 app.add_route('/block', polkascan.BlockListResource())
 app.add_route('/block/{block_id}', polkascan.BlockDetailsResource())

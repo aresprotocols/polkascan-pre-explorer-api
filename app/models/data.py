@@ -866,6 +866,8 @@ class PriceRequest(BaseModel):
         return obj_dict
 
 
+
+
 class EstimatesParticipants(BaseModel):
     __tablename__ = 'data_estimates_participants'
 
@@ -875,12 +877,14 @@ class EstimatesParticipants(BaseModel):
     # participant = sa.Column(sa.String(length=64), primary_key=True, nullable=False)
     # price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True)
     # option_index = sa.Column(sa.Integer(), nullable=True)
-    # created_at = sa.Column(sa.Integer(), nullable=False)
+    # block_id = sa.Column(sa.Integer(), nullable=False)
 
     symbol = sa.Column(sa.String(length=30), primary_key=True, nullable=False)
     estimate_id = sa.Column(sa.Integer(), primary_key=True, nullable=False)
     estimate_type = sa.Column(sa.String(length=30), primary_key=True, nullable=False, index=True)
     participant = sa.Column(sa.String(length=64), primary_key=True, nullable=False)
+    ss58_address = sa.Column(sa.String(48), index=True)
+    created_at = sa.Column(sa.DateTime(timezone=True), nullable=True)
     price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True)
     option_index = sa.Column(sa.Integer(), nullable=True)
     block_id = sa.Column(sa.Integer(), nullable=False)
@@ -890,4 +894,23 @@ class EstimatesParticipants(BaseModel):
 
     def serialize_formatting_hook(self, obj_dict):
         obj_dict['attributes']['participant'] = ss58_encode(self.participant.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE)
+        return obj_dict
+
+
+class EstimatesWinner(BaseModel):
+    __tablename__ = 'data_estimates_winner'
+    id = sa.Column(sa.Integer(), primary_key=True, autoincrement=True)
+    block_id = sa.Column('block_id', sa.Integer(), nullable=False)
+    symbol = sa.Column('symbol', sa.String(length=30), nullable=False)
+    estimate_id = sa.Column('estimate_id', sa.Integer(), nullable=False)
+    estimate_type = sa.Column('estimate_type', sa.String(length=30), nullable=False)
+    ss58_address = sa.Column('ss58_address', sa.String(length=48), nullable=False)
+    public_key = sa.Column('public_key', sa.String(length=64), nullable=False)
+    reward = sa.Column('reward', sa.Numeric(precision=65, scale=0), nullable=False)
+    created_at = sa.Column('created_at', sa.DateTime(timezone=True), nullable=True)
+
+    def serialize_id(self):
+        return '{}-{}-{}'.format(self.symbol, self.estimate_id, self.public_key)
+
+    def serialize_formatting_hook(self, obj_dict):
         return obj_dict
