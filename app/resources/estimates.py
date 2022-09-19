@@ -61,7 +61,10 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
                                          func.sum(EstimatesParticipants.deposit)). \
                 filter_by(ss58_address=self.item_id). \
                 group_by(EstimatesParticipants.ss58_address).first()
-            return {'total_deposit': str(results[1])}
+            if results is None:
+                return {'total_deposit': 0}
+            else:
+                return {'total_deposit': str(results[1])}
 
     def get_item_url_name(self):
         return 'ss58'
@@ -114,7 +117,10 @@ class EstimatesWinnerList(JSONAPIDetailResourceFilterWithDb):
                                          func.sum(EstimatesWinner.reward)). \
                 filter_by(ss58_address=self.item_id). \
                 group_by(EstimatesWinner.ss58_address).first()
-            return {'total_reward': str(results[1])}
+            if results is None:
+                return {'total_reward': 0}
+            else:
+                return {'total_reward': str(results[1])}
 
     def get_item(self, item_id, offset, size_num):
         print("item_id", item_id, "offset", item_id, "size_num", size_num)
