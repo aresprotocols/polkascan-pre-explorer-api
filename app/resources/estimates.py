@@ -55,16 +55,16 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
 
     def get_meta(self):
         if self.item_id == '':
-            return {'total_deposit': 0}
+            return {'total_deposit': 0, 'total_count': 0}
         else:
-            results = self.session.query(EstimatesParticipants.ss58_address,
+            results = self.session.query(func.count(EstimatesParticipants.ss58_address),
                                          func.sum(EstimatesParticipants.deposit)). \
                 filter_by(ss58_address=self.item_id). \
                 group_by(EstimatesParticipants.ss58_address).first()
             if results is None:
-                return {'total_deposit': 0}
+                return {'total_deposit': 0, 'total_count': 0}
             else:
-                return {'total_deposit': str(results[1])}
+                return {'total_deposit': str(results[1]), 'total_count': int(results[0])}
 
     def get_item_url_name(self):
         return 'ss58'
@@ -111,16 +111,16 @@ class EstimatesWinnerList(JSONAPIDetailResourceFilterWithDb):
 
     def get_meta(self):
         if self.item_id == '':
-            return {'total_reward': 0}
+            return {'total_reward': 0, 'total_count': 0}
         else:
-            results = self.session.query(EstimatesWinner.ss58_address,
+            results = self.session.query(func.count(EstimatesWinner.ss58_address),
                                          func.sum(EstimatesWinner.reward)). \
                 filter_by(ss58_address=self.item_id). \
                 group_by(EstimatesWinner.ss58_address).first()
             if results is None:
-                return {'total_reward': 0}
+                return {'total_reward': 0, 'total_count': 0}
             else:
-                return {'total_reward': str(results[1])}
+                return {'total_reward': str(results[1]), 'total_count': int(results[0])}
 
     def get_item(self, item_id, offset, size_num):
         print("item_id", item_id, "offset", item_id, "size_num", size_num)
