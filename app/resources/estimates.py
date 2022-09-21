@@ -1,5 +1,6 @@
 import falcon
 import logging
+import time
 from sqlalchemy import func
 from app.models.data import EstimatesParticipants, EstimatesWinner
 from app.resources.base import JSONAPIResource, JSONAPIDetailResourceFilterWithDb
@@ -94,7 +95,7 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
                     'price': None if estimate_item.price is None else str(estimate_item.price),
                     'deposit': None if estimate_item.deposit is None else str(estimate_item.deposit),
                     'option_index': estimate_item.option_index,
-                    'created_at': str(estimate_item.created_at)
+                    'created_at': estimate_item.created_at.timestamp()
                 }
                 for estimate_item in estimate_list
             ]
@@ -149,7 +150,7 @@ class EstimatesWinnerList(JSONAPIDetailResourceFilterWithDb):
                     'public_key': winner_item.public_key,
                     'ss58_address': winner_item.ss58_address,
                     'reward': str(winner_item.reward),
-                    'created_at': str(winner_item.created_at)
+                    'created_at': winner_item.created_at.timestamp()
                 }
                 for winner_item in winner_list
             ]
