@@ -128,6 +128,9 @@ class ChainDataTask(BaseTask):
         symbols = utils.query_storage(pallet_name='AresOracle', storage_name='PricesRequests',
                                       substrate=substrate,
                                       block_hash=block_hash)
+
+        symbols_len = len(symbols) if isinstance(symbols, list) else len(symbols.value)
+        # print("symbols ", symbols, type(symbols))
         total_price_requests = self.session.query(func.count(PriceRequest.order_id)).scalar()
 
         resp = {
@@ -140,7 +143,7 @@ class ChainDataTask(BaseTask):
             'total_validators': int(total_validators),
             'total_stake': str(total_stake),
             'inflation': inflation,
-            'total_symbols': len(symbols),
+            'total_symbols': symbols_len,
             'total_price_requests': total_price_requests,
             # 'remaining_rewards_of_purchase': 0 # not need.
         }
