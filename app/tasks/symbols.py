@@ -1,3 +1,5 @@
+import time
+
 from dogpile.cache import CacheRegion
 from sqlalchemy import and_
 from sqlalchemy.orm import scoped_session, Session, load_only
@@ -43,6 +45,11 @@ class SymbolsPriceTask(BaseTask):
         self.substrate = None
 
     def post(self):
+        if self.session is None or self.substrate is None:
+            print("self.session or self.substrate is None")
+            time.sleep(60)
+            self.before()
+
         print("Schedule call - SymbolsPriceTask POST")
         substrate = self.substrate
         block_hash = substrate.get_chain_finalised_head()
