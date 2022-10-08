@@ -26,11 +26,17 @@ class SymbolsPriceTask(BaseTask):
         self.is_debug = is_debug
 
     def before(self):
-        print("Schedule call - SymbolsPriceTask BEFORE")
-        engine = create_engine(self.db_setting, echo=self.is_debug, isolation_level="READ_UNCOMMITTED", pool_pre_ping=True)
-        session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-        self.session = scoped_session(session_factory)
-        self.substrate = create_substrate()
+        print("Schedule call - SymbolsPriceTask BEFORE - NEW")
+        try:
+            engine = create_engine(self.db_setting, echo=self.is_debug, isolation_level="READ_UNCOMMITTED",
+                                   pool_pre_ping=True)
+            session_factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+            self.session = scoped_session(session_factory)
+            self.substrate = create_substrate()
+        except ValueError as err:
+            print("SymbolsPriceTask BEFORE - On error will retry.", err.__str__())
+            time.sleep(60)
+            self.before()
 
     # def before(self):
     #     # print("RUN 1")
@@ -73,7 +79,8 @@ class SymbolsPriceTask(BaseTask):
 
             # Add block height to auth attribute.
             auths = [[ss58_encode(auth_items[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth_items[1]]
-                     if isinstance(auth_items, list) else [ss58_encode(auth_items.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), 0]
+                     if isinstance(auth_items, list) else [
+                ss58_encode(auth_items.replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), 0]
                      for auth_items in symbol_prices[0][4]]
 
             # auths = [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in symbol_prices[0][4]]
