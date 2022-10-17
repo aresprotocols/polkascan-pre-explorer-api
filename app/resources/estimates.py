@@ -2,7 +2,7 @@ import falcon
 import logging
 import time
 from sqlalchemy import func
-from app.models.data import EstimatesParticipants, EstimatesWinner
+from app.models.data import EstimatesParticipants, EstimatesWinner, EstimatesDataList
 from app.resources.base import JSONAPIResource, JSONAPIDetailResourceFilterWithDb
 
 
@@ -153,6 +153,56 @@ class EstimatesWinnerList(JSONAPIDetailResourceFilterWithDb):
                     'created_at': winner_item.created_at.timestamp()
                 }
                 for winner_item in winner_list
+            ]
+        }
+        return data
+
+class EstimatesCompletedList(JSONAPIDetailResourceFilterWithDb):
+    cache_expiration_time = 0
+    item_id = ''
+
+    def get_item_url_name(self):
+        return 'state'
+
+    def get_meta(self):
+        if self.item_id == '':
+            return {'total_count': 0}
+        else:
+            results = self.session.query(func.count(EstimatesDataList.id)). \
+                filter_by(state=self.item_id).first()
+            if results is None:
+                return {'total_count': 0}
+            else:
+                return {'total_count': int(results[0])}
+
+    def get_item(self, item_id, offset, size_num):
+        print("item_id", item_id, "offset", item_id, "size_num", size_num)
+        self.item_id = item_id
+
+        estimates_data_list: [EstimatesDataList] = EstimatesDataList.query(self.session).filter_by(
+            state=item_id).order_by(EstimatesDataList.block_id.desc()).offset(offset).limit(size_num)[:size_num]
+
+        data = {
+            'name': 'estimates',
+            'type': 'line',
+            'data': [
+                {
+                    'block_id': estimates_data.block_id,
+                    'symbol': estimates_data.symbol,
+                    'estimate_id': estimates_data.estimate_id,
+                    'symbol_fraction': estimates_data.symbol_fraction,
+                    'state': estimates_data.state,
+                    'start': estimates_data.start,
+                    'end': estimates_data.end,
+                    'distribute': estimates_data.distribute,
+                    'range_data': estimates_data.range_data,
+                    'estimates_type': estimates_data.estimates_type,
+                    'multiplier': estimates_data.multiplier,
+                    'ticket_price': str(estimates_data.ticket_price),
+                    'estimates_type': estimates_data.estimates_type,
+                    'created_at': estimates_data.created_at.timestamp(),
+                }
+                for estimates_data in estimates_data_list
             ]
         }
         return data
