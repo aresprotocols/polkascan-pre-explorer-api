@@ -37,8 +37,10 @@ class ChainDataTask(BaseTask):
     #     self.substrate = create_substrate()
 
     def after(self):
+        print("Schedule call - ChainDataTask AFTER")
         self.substrate.close()
-        self.session.close()
+        # self.session.close()
+        self.session.remove()
         self.substrate = None
         self.session = None
 

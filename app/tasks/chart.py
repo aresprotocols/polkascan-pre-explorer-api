@@ -30,7 +30,9 @@ class AresChartTask(BaseTask):
         self.session = scoped_session(session_factory)
 
     def after(self):
-        self.session.close()
+        print("Schedule call - AresChartTask AFTER")
+        # self.session.close()
+        self.session.remove()
         self.session = None
 
     def post(self):

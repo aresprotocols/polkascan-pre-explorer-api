@@ -38,15 +38,11 @@ class SymbolsPriceTask(BaseTask):
             time.sleep(60)
             self.before()
 
-    # def before(self):
-    #     # print("RUN 1")
-    #     self.substrate = create_substrate()
-    #     _scoped_session = scoped_session(session_factory)
-    #     self.session = _scoped_session()
-
     def after(self):
+        print("Schedule call - SymbolsPriceTask AFTER")
         self.substrate.close()
-        self.session.close()
+        # self.session.close()
+        self.session.remove()
         self.session = None
         self.substrate = None
 
