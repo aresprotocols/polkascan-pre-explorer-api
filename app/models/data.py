@@ -924,14 +924,16 @@ class EstimatesDataList(BaseModel):
     estimate_id = sa.Column(sa.Integer(), primary_key=True, nullable=False)
     symbol = sa.Column(sa.String(length=30), primary_key=True, nullable=False)
     symbol_fraction = sa.Column(sa.Integer(), nullable=False)
-    state = sa.Column(sa.String(length=16), primary_key=True, nullable=False, index=True) # InActive
-    start = sa.Column(sa.Integer(), nullable=False) # 1068200
+    state = sa.Column(sa.String(length=16), primary_key=True, nullable=False, index=True)  # InActive
+    start = sa.Column(sa.Integer(), nullable=False)  # 1068200
     end = sa.Column(sa.Integer(), nullable=False)
     distribute = sa.Column(sa.Integer(), nullable=False)
-    range_data = sa.Column(LONGTEXT()) # range
+    range_data = sa.Column(LONGTEXT())  # range
     deviation = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True, index=True)
     multiplier = sa.Column(LONGTEXT())
     ticket_price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True, index=True)
     estimates_type = sa.Column(sa.String(length=30), primary_key=True, nullable=False, index=True)
     created_at = sa.Column(sa.DateTime(timezone=True), nullable=True)
     block_id = sa.Column(sa.Integer(), nullable=False)
+    symbol_completed_price = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True, index=True)
+    total_reward = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True, index=True)
