@@ -199,6 +199,14 @@ class JSONAPIDetailResource(JSONAPIResource, ABC):
 class JSONAPIDetailResourceFilterWithDb(JSONAPIResource, ABC):
     cache_expiration_time = DOGPILE_CACHE_SETTINGS['default_detail_cache_expiration_time']
 
+    filter_list = {}
+
+    def __init__(self, filter_list={}):
+        self.filter_list = filter_list
+
+    def get_filter_list(self):
+        return self.filter_list
+
     def get_item_url_name(self):
         return 'item_id'
 
@@ -213,6 +221,12 @@ class JSONAPIDetailResourceFilterWithDb(JSONAPIResource, ABC):
         params = req.params
         start_num = max(int(params.get('page[number]', 1)) - 1, 0)
         size_num = min(int(params.get('page[size]', 25)), MAX_RESOURCE_PAGE_SIZE)
+
+        # if isinstance(self.get_item_url_name(), list):
+        #     params = []
+        # else:
+        #     item = self.get_item(kwargs.get(self.get_item_url_name()), start_num * size_num, size_num)
+
         item = self.get_item(kwargs.get(self.get_item_url_name()), start_num * size_num, size_num)
         return make_response(self, item, req)
 

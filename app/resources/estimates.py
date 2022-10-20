@@ -29,7 +29,7 @@ class StatisticsEstimate(JSONAPIResource):
             symbol=symbol,
             estimate_id=estimate_id
         ).first()
-        if tmp and tmp.estimate_type == 'price':
+        if tmp and tmp.estimate_type == 'deviation':
             results = EstimatesParticipants.query(self.session).filter_by(symbol=symbol, estimate_id=estimate_id).all()
             items = [row for row in results]
             items.sort(key=lambda r: r.price)
@@ -58,29 +58,39 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
         if self.item_id == '':
             return {'total_deposit': 0, 'total_count': 0}
         else:
-            results = self.session.query(func.count(EstimatesParticipants.ss58_address),
-                                         func.sum(EstimatesParticipants.deposit)). \
-                filter_by(ss58_address=self.item_id). \
-                group_by(EstimatesParticipants.ss58_address).first()
+            results = self.filter_assistant(
+                item_id=self.item_id,
+                query_data=self.session.query(func.count(EstimatesParticipants.ss58_address),
+                                              func.sum(EstimatesParticipants.deposit))
+            ).filter_by(ss58_address=self.item_id).group_by(EstimatesParticipants.ss58_address).first()
+
             if results is None:
                 return {'total_deposit': 0, 'total_count': 0}
             else:
                 return {'total_deposit': str(results[1]), 'total_count': int(results[0])}
 
+    def filter_assistant(self, item_id, query_data):
+        filter_list = self.get_filter_list()
+        if 'estimate_type' in filter_list :
+            return query_data.filter_by(
+                ss58_address=item_id, estimate_type=filter_list['estimate_type']
+            )
+        else:
+            return query_data.filter_by(
+                ss58_address=item_id
+            )
+
     def get_item_url_name(self):
         return 'ss58'
 
     def get_item(self, item_id, offset, size_num):
-        print("item_id", item_id, "offset", item_id, "size_num", size_num)
         self.item_id = item_id
 
-        estimate_list: [EstimatesParticipants] = EstimatesParticipants.query(self.session).filter_by(
-            ss58_address=item_id).order_by(EstimatesParticipants.block_id.desc()).offset(offset).limit(size_num)[
-                                                 :size_num]
+        estimate_list: [EstimatesParticipants] = self.filter_assistant(
+            item_id=self.item_id,
+            query_data=EstimatesParticipants.query(self.session)
+        ).order_by(EstimatesParticipants.block_id.desc()).offset(offset).limit(size_num)[:size_num]
 
-        # print("###########1")
-        # print(estimate_list[1].block_id, estimate_list[1].symbol, estimate_list[1].price)
-        # print("###########2")
         data = {
             'name': 'Price',
             'type': 'line',
@@ -126,18 +136,10 @@ class EstimatesWinnerList(JSONAPIDetailResourceFilterWithDb):
     def get_item(self, item_id, offset, size_num):
         print("item_id", item_id, "offset", item_id, "size_num", size_num)
         self.item_id = item_id
-        # query = session.query(
-        #     (User.first_name + ' ' + User.last_name).label('seller'),
-        #     sa.func.count(OrderItem.id).label('unique_items'),
-        #     sa.func.sum(OrderItem.qty).label('items_total'),
-        #     sa.func.sum(OrderItem.qty * Product.price).label('order_amount'),
-        # ).join(OrderItem).join(Product).group_by(User.id).order_by('items_total',
-        #                                                            'order_amount')
 
         winner_list: [EstimatesWinner] = EstimatesWinner.query(self.session).filter_by(
             ss58_address=item_id).order_by(EstimatesWinner.block_id.desc()).offset(offset).limit(size_num)[:size_num]
 
-        # winner_list: [EstimatesWinner] = []
         data = {
             'name': 'Price',
             'type': 'line',
@@ -168,19 +170,36 @@ class EstimatesCompletedList(JSONAPIDetailResourceFilterWithDb):
         if self.item_id == '':
             return {'total_count': 0}
         else:
-            results = self.session.query(func.count(EstimatesDataList.id)). \
-                filter_by(state=self.item_id).first()
+
+            results = self.filter_assistant(item_id=self.item_id, query_data=self.session.query(func.count(EstimatesDataList.id))).first()
+
             if results is None:
                 return {'total_count': 0}
             else:
                 return {'total_count': int(results[0])}
 
+    def filter_assistant(self, item_id, query_data):
+        filter_list = self.get_filter_list()
+        if 'estimate_type' in filter_list :
+            return query_data.filter_by(
+                state=item_id, estimates_type=filter_list['estimate_type']
+            )
+        else:
+            return query_data.filter_by(
+                state=item_id
+            )
+
+
     def get_item(self, item_id, offset, size_num):
         print("item_id", item_id, "offset", item_id, "size_num", size_num)
         self.item_id = item_id
 
-        estimates_data_list: [EstimatesDataList] = EstimatesDataList.query(self.session).filter_by(
-            state=item_id).order_by(EstimatesDataList.block_id.desc()).offset(offset).limit(size_num)[:size_num]
+        estimates_data_list: [EstimatesDataList] = self.filter_assistant(
+            item_id=self.item_id,
+            query_data=EstimatesDataList.query(self.session)
+        ).order_by(
+            EstimatesDataList.block_id.desc()
+        ).offset(offset).limit(size_num)[:size_num]
 
         data = {
             'name': 'estimates',
