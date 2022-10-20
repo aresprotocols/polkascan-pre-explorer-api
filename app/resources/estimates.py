@@ -101,6 +101,7 @@ class EstimatesParticipantsList(JSONAPIDetailResourceFilterWithDb):
                     'estimate_id': estimate_item.estimate_id,
                     'estimate_type': estimate_item.estimate_type,
                     'participant': estimate_item.participant,
+                    'end': estimate_item.end,
                     'ss58_address': estimate_item.ss58_address,
                     'price': None if estimate_item.price is None else str(estimate_item.price),
                     'deposit': None if estimate_item.deposit is None else str(estimate_item.deposit),

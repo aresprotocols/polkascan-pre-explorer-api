@@ -79,11 +79,11 @@ app.add_route('/estimate/participate_estimates/deviation/{ss58}', estimates.Esti
 ))
 app.add_route('/estimate/winner/{ss58}', estimates.EstimatesWinnerList())
 
-app.add_route('/estimate/completed_list/{state}', estimates.EstimatesCompletedList())
-app.add_route('/estimate/completed_list/range/{state}', estimates.EstimatesCompletedList(
+app.add_route('/estimate/list/{state}', estimates.EstimatesCompletedList())
+app.add_route('/estimate/list/range/{state}', estimates.EstimatesCompletedList(
     filter_list={'estimate_type': 'range'}
 ))
-app.add_route('/estimate/completed_list/deviation/{state}', estimates.EstimatesCompletedList(
+app.add_route('/estimate/list/deviation/{state}', estimates.EstimatesCompletedList(
     filter_list={'estimate_type': 'deviation'}
 ))
 
