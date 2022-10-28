@@ -80,6 +80,7 @@ class SymbolsPriceTask(BaseTask):
                      for auth_items in symbol_prices[0][4]]
 
             # auths = [[ss58_encode(auth[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth[1]] for auth in symbol_prices[0][4]]
+
             if symbol_prices:
                 if len(symbol_prices) > 1:
                     results.append({
@@ -88,7 +89,8 @@ class SymbolsPriceTask(BaseTask):
                         "interval": (symbol_prices[0][3] - symbol_prices[1][3]).total_seconds(),
                         "price": symbol_prices[0][1],
                         "block_id": symbol_prices[0][2],
-                        "created_at": symbol_prices[0][3].strftime('%Y-%m-%d %H:%M:%S'),
+                        # "created_at": symbol_prices[0][3].strftime('%Y-%m-%d %H:%M:%S'),
+                        "created_at": int(symbol_prices[0][3].timestamp()),
                         "auth": auths
                     })
                 else:
@@ -98,7 +100,8 @@ class SymbolsPriceTask(BaseTask):
                         "interval": None,
                         "price": symbol_prices[0][1],
                         "block_id": symbol_prices[0][2],
-                        "created_at": symbol_prices[0][3].strftime('%Y-%m-%d %H:%M:%S'),
+                        # "created_at": symbol_prices[0][3].strftime('%Y-%m-%d %H:%M:%S'),
+                        "created_at": int(symbol_prices[0][3].timestamp()),
                         "auth": auths
                     })
         results.sort(key=lambda r: r['interval'])
