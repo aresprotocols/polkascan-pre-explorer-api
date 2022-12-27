@@ -28,7 +28,7 @@ from sqlalchemy.orm import sessionmaker
 from app.middleware.cache import CacheMiddleware
 from app.middleware.context import ContextMiddleware
 from app.middleware.sessionmanager import SQLAlchemySessionManager
-from app.resources import polkascan, charts, oracle, estimates
+from app.resources import polkascan, charts, oracle, estimates, reminder
 from app.settings import DB_CONNECTION, DEBUG, DOGPILE_CACHE_SETTINGS
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -69,6 +69,7 @@ app.add_route('/oracle/era_requests', oracle.OracleEraRequests())
 app.add_route('/oracle/pre_check_tasks', oracle.OraclePreCheckTaskListResource())
 app.add_route('/oracle/ares/author/{key}/{auth}', oracle.OracleAresAuthorityResource())
 app.add_route('/oracle/reward', oracle.OracleRequestsReward())
+app.add_route('/reminder/list/{acc}', reminder.ReminderListByAccount())
 app.add_route('/estimate/statistics/{symbol}/{id}', estimates.StatisticsEstimate())
 app.add_route('/estimate/participate_estimates/{ss58}', estimates.EstimatesParticipantsList())
 app.add_route('/estimate/participate_estimates/range/{ss58}', estimates.EstimatesParticipantsList(

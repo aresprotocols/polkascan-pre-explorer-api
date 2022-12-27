@@ -794,6 +794,46 @@ class SearchIndex(BaseModel):
     index_type_id = sa.Column(sa.Integer(), nullable=False, index=True)
     sorting_value = sa.Column(sa.Numeric(precision=65, scale=0), nullable=True, index=True)
 
+class DataReminder(BaseModel):
+    __tablename__ = 'data_reminder'
+
+    id = sa.Column('id', sa.Integer(),  primary_key=True, nullable=False)
+    reminder_id = sa.Column('reminder_id', sa.Integer, nullable=False)
+    owner = sa.Column('owner', sa.String(length=100), nullable=False, index=True)
+    owner_ss58 = sa.Column(sa.String(48), index=True)
+    interval_bn = sa.Column('interval_bn', sa.Integer(), nullable=False)
+    repeat_count = sa.Column('repeat_count', sa.Integer(), nullable=False)
+    create_bn = sa.Column('create_bn', sa.Integer(), nullable=False)
+    price_snapshot = sa.Column('price_snapshot', sa.Numeric(), nullable=False)
+    trigger_condition_type = sa.Column('trigger_condition_type', sa.String(length=100), nullable=False)
+    trigger_condition_price_key = sa.Column('trigger_condition_price_key', sa.String(length=100), nullable=False)
+    anchor_price = sa.Column('anchor_price', sa.Numeric(), nullable=False)
+    trigger_receiver_type = sa.Column('trigger_receiver_type', sa.String(length=100), nullable=False)
+    trigger_receiver_url = sa.Column('trigger_receiver_url', sa.String(length=512), nullable=False)
+    trigger_receiver_sign = sa.Column('trigger_receiver_sign', sa.String(length=256), nullable=False)
+    update_bn = sa.Column('update_bn', sa.Integer(), nullable=False)
+    tip = sa.Column('tip', sa.String(length=256), nullable=False)
+    block_id = sa.Column('block_id', sa.Integer(), nullable=False, index=True)
+
+class DataReminderMsg(BaseModel):
+    __tablename__ = 'data_reminder_msg'
+
+    id = sa.Column('id', sa.Integer(), primary_key=True, nullable=False)
+    reminder_id = sa.Column('reminder_id', sa.Integer, nullable=False)
+    remaining_count = sa.Column('remaining_count', sa.Integer, nullable=False)
+    send_bn = sa.Column('send_bn', sa.Integer(), nullable=False)
+    submitter = sa.Column('submitter', sa.String(length=100), nullable=False, index=True)
+    response_mark = sa.Column('response_mark', sa.String(length=64), nullable=True)
+    status = sa.Column('status', sa.Integer(), nullable=True, index=True)
+    block_id = sa.Column('block_id', sa.Integer(), nullable=False, index=True)
+
+class DataReminderLifecycle(BaseModel):
+    __tablename__ = 'data_reminder_lifecycle'
+
+    id = sa.Column('id', sa.Integer(), primary_key=True, nullable=False)
+    reminder_id = sa.Column('reminder_id', sa.Integer, nullable=False, index=True)
+    points = sa.Column('points', sa.Integer, nullable=False, index=True)
+    is_released = sa.Column('is_released', sa.Integer, nullable=True, index=True)
 
 class SearchIndexType(BaseModel):
     __tablename__ = 'data_account_search_index_type'

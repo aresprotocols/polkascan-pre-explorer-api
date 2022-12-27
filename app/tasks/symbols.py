@@ -71,7 +71,6 @@ class SymbolsPriceTask(BaseTask):
             if len(symbol_prices) == 0:
                 continue
 
-            # print('KAMI DEBUG - symbol_prices[0][4]] = ', symbol_prices[0][4])
 
             # Add block height to auth attribute.
             auths = [[ss58_encode(auth_items[0].replace('0x', ''), SUBSTRATE_ADDRESS_TYPE), auth_items[1]]
