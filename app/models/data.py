@@ -814,6 +814,7 @@ class DataReminder(BaseModel):
     update_bn = sa.Column('update_bn', sa.Integer(), nullable=False)
     tip = sa.Column('tip', sa.String(length=256), nullable=False)
     block_id = sa.Column('block_id', sa.Integer(), nullable=False, index=True)
+    datetime = sa.Column('datetime', sa.DateTime(timezone=True), nullable=True)
 
 class DataReminderMsg(BaseModel):
     __tablename__ = 'data_reminder_msg'
@@ -826,6 +827,7 @@ class DataReminderMsg(BaseModel):
     response_mark = sa.Column('response_mark', sa.String(length=64), nullable=True)
     status = sa.Column('status', sa.Integer(), nullable=True, index=True)
     block_id = sa.Column('block_id', sa.Integer(), nullable=False, index=True)
+    datetime = sa.Column(sa.DateTime(timezone=True), nullable=True)
 
 class DataReminderLifecycle(BaseModel):
     __tablename__ = 'data_reminder_lifecycle'

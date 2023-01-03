@@ -70,6 +70,7 @@ app.add_route('/oracle/pre_check_tasks', oracle.OraclePreCheckTaskListResource()
 app.add_route('/oracle/ares/author/{key}/{auth}', oracle.OracleAresAuthorityResource())
 app.add_route('/oracle/reward', oracle.OracleRequestsReward())
 app.add_route('/reminder/list/{acc}', reminder.ReminderListByAccount())
+app.add_route('/reminder/msg/{acc}', reminder.ReminderMsgByAccount())
 app.add_route('/estimate/statistics/{symbol}/{id}', estimates.StatisticsEstimate())
 app.add_route('/estimate/participate_estimates/{ss58}', estimates.EstimatesParticipantsList())
 app.add_route('/estimate/participate_estimates/range/{ss58}', estimates.EstimatesParticipantsList(
