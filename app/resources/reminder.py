@@ -80,7 +80,7 @@ class ReminderListByAccount(JSONAPIDetailResourceFilterWithDb):
                     'tip': reminder_data.tip,
                     'points': reminder_data.points,
                     'is_released': reminder_data.is_released,
-                    'datetime': reminder_data.datetime.timestamp(),
+                    'datetime': reminder_data.datetime.timestamp() if reminder_data.datetime is not None else '',
                 }
                 for reminder_data in reminder_list
             ]
@@ -159,7 +159,7 @@ class ReminderMsgByAccount(JSONAPIDetailResourceFilterWithDb):
                     'trigger_receiver_sign': msg_data.trigger_receiver_sign,
                     # 'update_bn': str(reminder_data.update_bn),
                     'tip': msg_data.tip,
-                    'datetime': msg_data.datetime.timestamp(),
+                    'datetime': msg_data.datetime.timestamp() if msg_data.datetime is not None else '',
                 }
                 for msg_data in msg_list
             ]
