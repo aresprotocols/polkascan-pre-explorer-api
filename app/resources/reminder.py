@@ -1,10 +1,8 @@
-import falcon
-import logging
-import time
 from sqlalchemy import func
-from app.models.data import EstimatesParticipants, EstimatesWinner, EstimatesDataList, DataReminder, \
+from app.models.data import DataReminder, \
     DataReminderLifecycle, DataReminderMsg
-from app.resources.base import JSONAPIResource, JSONAPIDetailResourceFilterWithDb
+from app.resources.base import JSONAPIDetailResourceFilterWithDb, make_response
+from app.settings import MAX_RESOURCE_PAGE_SIZE
 
 
 class ReminderListByAccount(JSONAPIDetailResourceFilterWithDb):
@@ -27,7 +25,6 @@ class ReminderListByAccount(JSONAPIDetailResourceFilterWithDb):
                 return {'total_count': 0}
             else:
                 return {'total_count': int(results[0])}
-
 
     def get_item(self, acc_id, offset, size_num):
         print("item_id", acc_id, "offset", offset, "size_num", size_num)
@@ -54,8 +51,10 @@ class ReminderListByAccount(JSONAPIDetailResourceFilterWithDb):
             DataReminderLifecycle.points,
             DataReminderLifecycle.is_released
         ). \
-            join(DataReminderLifecycle, DataReminderLifecycle.reminder_id == DataReminder.reminder_id). \
-            filter(DataReminder.owner_ss58 == acc_id, DataReminderLifecycle.is_released.is_(None)).order_by(DataReminder.block_id.desc()).offset(offset).limit(size_num)[:size_num]
+                            join(DataReminderLifecycle, DataReminderLifecycle.reminder_id == DataReminder.reminder_id). \
+                            filter(DataReminder.owner_ss58 == acc_id,
+                                   DataReminderLifecycle.is_released.is_(None)).order_by(
+            DataReminder.block_id.desc()).offset(offset).limit(size_num)[:size_num]
 
         data = {
             'name': 'reminder',
@@ -91,30 +90,52 @@ class ReminderListByAccount(JSONAPIDetailResourceFilterWithDb):
 class ReminderMsgByAccount(JSONAPIDetailResourceFilterWithDb):
     cache_expiration_time = 6
     acc_id = ''
+    tip = ''
 
     def get_item_url_name(self):
         return 'acc'
+
+    def get_item_url_name2(self):
+        return 'tip'
+
+    def needFilterTip(self):
+        return self.tip != '' and self.tip is not None
+
+    def process_get_response(self, req, resp, **kwargs):
+        params = req.params
+        start_num = max(int(params.get('page[number]', 1)) - 1, 0)
+        size_num = min(int(params.get('page[size]', 25)), MAX_RESOURCE_PAGE_SIZE)
+
+        item = self.get_item(kwargs.get(self.get_item_url_name()), kwargs.get(self.get_item_url_name2()),
+                             start_num * size_num, size_num)
+        return make_response(self, item, req)
 
     def get_meta(self):
         if self.acc_id == '':
             return {'total_count': 0}
         else:
 
-            results = self.session.query(func.count(DataReminderMsg.id)). \
+            _query = self.session.query(func.count(DataReminderMsg.id)). \
                 join(DataReminder, DataReminderMsg.reminder_id == DataReminder.reminder_id). \
-                filter(DataReminder.owner_ss58 == self.acc_id).first()
+                filter(DataReminder.owner_ss58 == self.acc_id)
+
+            if self.needFilterTip():
+                _query = _query.filter(DataReminder.tip == self.tip)
+
+
+            results = _query.first()
 
             if results is None:
                 return {'total_count': 0}
             else:
                 return {'total_count': int(results[0])}
 
-
-    def get_item(self, acc_id, offset, size_num):
-        print("item_id", acc_id, "offset", offset, "size_num", size_num)
+    def get_item(self, acc_id, tip_str, offset, size_num):
+        print("item_id", acc_id, "tip_str", tip_str, "offset", offset, "size_num", size_num)
         self.acc_id = acc_id
+        self.tip = tip_str
 
-        msg_list = self.session.query(
+        _query = self.session.query(
             DataReminderMsg.id,
             DataReminderMsg.submitter,
             DataReminderMsg.datetime,
@@ -136,7 +157,12 @@ class ReminderMsgByAccount(JSONAPIDetailResourceFilterWithDb):
             DataReminder.tip,
         ). \
             join(DataReminder, DataReminderMsg.reminder_id == DataReminder.reminder_id). \
-            filter(DataReminder.owner_ss58 == acc_id).order_by(DataReminderMsg.block_id.desc()).offset(offset).limit(size_num)[:size_num]
+            filter(DataReminder.owner_ss58 == acc_id)
+
+        if self.needFilterTip():
+            _query = _query.filter(DataReminder.tip == self.tip)
+
+        msg_list = _query.order_by(DataReminderMsg.block_id.desc()).offset(offset).limit(size_num)[:size_num]
 
         data = {
             'name': 'reminder',
